@@ -1,0 +1,19 @@
+- sysctl.conf anpassen
+sysctl -p
+
+- ipv6 in /etc/modprobe.d/blacklist.conf
+
+
+
+
+TODO:
+- snmp
+- MRTG
+- routing
+
+
+
+- munin
+- NTP
+- FORWARD dst 192/8 deny
+- ping-ziele

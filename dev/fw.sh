@@ -25,25 +25,17 @@ logger -t iptables Creating user tables + rules
 # create DUMP table
 /sbin/iptables -N DUMP
 /sbin/iptables -F DUMP
-# limited logs
 /sbin/iptables -A DUMP -p icmp -m limit --limit 1/m --limit-burst 5 -j LOG --log-level 6 --log-prefix "IPT ICMPDUMP: "
 /sbin/iptables -A DUMP -p tcp -m limit --limit 1/m --limit-burst 5 -j LOG --log-level 6 --log-prefix "IPT TCPDUMP: "
 /sbin/iptables -A DUMP -p udp -m limit --limit 6/h --limit-burst 5 -j LOG --log-level 6 --log-prefix "IPT UDPDUMP: "
-# unlimited logs
-#/sbin/iptables -A DUMP -p icmp -j LOG --log-level 6 --log-prefix "IPT ICMPDUMP: "
-#/sbin/iptables -A DUMP -p tcp -j LOG --log-level 6 --log-prefix "IPT TCPDUMP: "
-#/sbin/iptables -A DUMP -p udp -j LOG --log-level 6 --log-prefix "IPT UDPDUMP: "
 /sbin/iptables -A DUMP -p tcp -j REJECT --reject-with tcp-reset
 /sbin/iptables -A DUMP -p udp -j REJECT --reject-with icmp-port-unreachable
 /sbin/iptables -A DUMP -j DROP
-#/sbin/iptables -A DUMP -j ACCEPT
 
 # Stateful table
 /sbin/iptables -N STATEFUL
 /sbin/iptables -F STATEFUL
 /sbin/iptables -I STATEFUL -m state --state ESTABLISHED,RELATED -j ACCEPT
-#/sbin/iptables -A STATEFUL -m state --state NEW -i ! ${IFext} -j ACCEPT
-#/sbin/iptables -A STATEFUL -m state --state NEW -j ACCEPT
 /sbin/iptables -A STATEFUL -j DUMP
 
 # SSH protection table
@@ -71,46 +63,7 @@ logger -t iptables Creating user tables + rules
 logger -t iptables Setting input/output rules
 # allow loopback in
 /sbin/iptables -A INPUT -i lo -j ACCEPT
-# allow loopback and LAN out
-#/sbin/iptables -A OUTPUT -o lo -j ACCEPT
-#/sbin/iptables -A OUTPUT -p ALL -s ${lannet} -j ACCEPT
-
-
-#logger -t iptables Setting Comcast specific rules
-# needs to be defined before reserved addresses, 
-# since Comcast typically uses a reserved address for DHCP servers
-# we could only allow ${dhcpgate} in, but Comcast has multiple servers
-# that are unbeknownst to us during lease negotiation (sigh).
-
-#/sbin/iptables -A INPUT -p tcp -i ${IFext} --sport bootps --dport bootpc -j ACCEPT
-#/sbin/iptables -A INPUT -p udp -i ${IFext} --sport bootps --dport bootpc -j ACCEPT
-
-logger -t iptables Preventing reserved addresses
-# drop reserved addresses incoming as per IANA listing
-/sbin/iptables -A INPUT -s 0.0.0.0/8 -j DUMP
-/sbin/iptables -A INPUT -s 1.0.0.0/8 -j DUMP
-/sbin/iptables -A INPUT -s 2.0.0.0/8 -j DUMP
-/sbin/iptables -A INPUT -s 5.0.0.0/8 -j DUMP
-/sbin/iptables -A INPUT -s 7.0.0.0/8 -j DUMP
-#/sbin/iptables -A INPUT -i ${IFext} -s 10.0.0.0/8 -j DUMP
-/sbin/iptables -A INPUT -s 23.0.0.0/8 -j DUMP
-/sbin/iptables -A INPUT -s 27.0.0.0/8 -j DUMP
-/sbin/iptables -A INPUT -s 31.0.0.0/8 -j DUMP
-/sbin/iptables -A INPUT -s 36.0.0.0/8 -j DUMP
-/sbin/iptables -A INPUT -s 39.0.0.0/8 -j DUMP
-/sbin/iptables -A INPUT -s 41.0.0.0/8 -j DUMP
-/sbin/iptables -A INPUT -s 42.0.0.0/8 -j DUMP
-/sbin/iptables -A INPUT -s 58.0.0.0/8 -j DUMP
-/sbin/iptables -A INPUT -s 59.0.0.0/8 -j DUMP
-/sbin/iptables -A INPUT -s 60.0.0.0/8 -j DUMP
-/sbin/iptables -A INPUT -s 127.0.0.0/8 -j DUMP
-/sbin/iptables -A INPUT -s 169.254.0.0/16 -j DUMP
-#/sbin/iptables -A INPUT -i ${IFext} -s 172.16.0.0/12 -j DUMP
-#/sbin/iptables -A INPUT -i ${IFext} -s 192.168.0.0/16 -j DUMP
-/sbin/iptables -A INPUT -s 197.0.0.0/8 -j DUMP
-/sbin/iptables -A INPUT -s 224.0.0.0/3 -j DUMP
-/sbin/iptables -A INPUT -s 240.0.0.0/8 -j DUMP
-/sbin/iptables -A INPUT -i $IFint ! -s $lannet -j DUMP
+# Output steht eh auf ACCEPT
 
 logger -t iptables Setting ICMP rules
 # allow certain inbound ICMP types (on *any* interface)
@@ -128,17 +81,8 @@ logger -t iptables Setting TCP/UDP rules
 /sbin/iptables -A INPUT -p tcp -i $IFext --dport ssh -j ACCEPT
 /sbin/iptables -A INPUT -p tcp --source $admins --dport http -j ACCEPT
 /sbin/iptables -A INPUT -p tcp -i $IFext --dport http -j ACCEPT
-#/sbin/iptables -A INPUT -p tcp -i ${IFext} --dport auth -j ACCEPT
-#/sbin/iptables -A INPUT -p udp -i ${IFext} --dport auth -j ACCEPT
 /sbin/iptables -A INPUT -p tcp --sport ntp --dport ntp -j ACCEPT
 /sbin/iptables -A INPUT -p udp --sport ntp --dport ntp -j ACCEPT
-# accept all other public ports
-#/sbin/iptables -A INPUT -p tcp -i ${IFext} --dport 1024: -j ACCEPT
-#/sbin/iptables -A INPUT -p udp -i ${IFext} --dport 33434: -j ACCEPT
-
-logger -t iptables Turning on NAT
-# masquerade from internal network
-/sbin/iptables -t nat -A POSTROUTING -s ${lannet} -o ${IFext} -j MASQUERADE
 
 logger -t classifying packets for shaping
 #voip="192.168.3.3"
@@ -188,6 +132,10 @@ iptables -t mangle -A POSTROUTING -o ${IFext} -p tcp --dport 6667 -j CLASSIFY --
 logger -t iptables Finish up
 # push everything else to state table
 /sbin/iptables -A INPUT -j STATEFUL
-#/sbin/iptables -A FORWARD -j STATEFUL
-#/sbin/iptables -A OUTPUT -j STATEFUL
 
+# Alles was zurueck kommt und zu einer Verbindung gehoert erlauben
+/sbin/iptables -A FORWARD -i $IFext -m state --state ESTABLISHED,RELATED -j ACCEPT
+
+logger -t iptables Turning on NAT
+# masquerade from internal network
+/sbin/iptables -t nat -A POSTROUTING -s ${lannet} -o ${IFext} -j MASQUERADE

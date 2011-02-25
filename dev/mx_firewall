@@ -43,6 +43,14 @@ case "$1" in
         /sbin/iptables -F -t nat
         /sbin/iptables -X
         /sbin/iptables -Z
+
+	ip addr flush eth1
+	ip addr flush eth2
+	ip route flush table kamp
+	ip route flush table koch
+	ip link set eth1 down
+	ip link set eth2 down
+
         log_end_msg 0
 	;;
 
@@ -52,3 +60,4 @@ case "$1" in
 esac
 
 exit 0
+

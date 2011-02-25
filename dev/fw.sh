@@ -1,8 +1,12 @@
+#!/bin/bash
+
+/root/routing.sh
+
 # other definitions
-IFext="eth1"
-IFint="eth0"
-lannet="192.168.2.0/24"
-admins="192.168.2.2/32"
+#IFext="eth1"
+#IFint="eth0"
+#lannet="192.168.2.0/24"
+#admins="192.168.2.2/32"
 
 logger -t iptables Setting default policies
 # chain policies
@@ -77,39 +81,46 @@ logger -t iptables Setting ICMP rules
 logger -t iptables Setting TCP/UDP rules
 # opened ports
 #/sbin/iptables -A INPUT -p tcp --dport ssh -m state --state NEW -j SSH
-/sbin/iptables -A INPUT -p tcp --source $admins --dport ssh -j ACCEPT
-/sbin/iptables -A INPUT -p tcp -i $IFext --dport ssh -j ACCEPT
-/sbin/iptables -A INPUT -p tcp --source $admins --dport http -j ACCEPT
-/sbin/iptables -A INPUT -p tcp -i $IFext --dport http -j ACCEPT
+/sbin/iptables -A INPUT -p tcp --source 10.10.0.0/24 --dport ssh -j ACCEPT
+/sbin/iptables -A INPUT -p tcp -i eth1 --dport ssh -j ACCEPT
+/sbin/iptables -A INPUT -p tcp -i eth2 --dport ssh -j ACCEPT
+
+/sbin/iptables -A INPUT -p tcp --source 10.10.0.0/24 --dport http -j ACCEPT
+/sbin/iptables -A INPUT -p tcp -i eth1 --dport http -j ACCEPT
+/sbin/iptables -A INPUT -p tcp -i eth2 --dport http -j ACCEPT
+
+# MUNIN
+/sbin/iptables -A INPUT -p tcp --source 10.10.1.251 --dport 4949 -j ACCEPT
+
 /sbin/iptables -A INPUT -p tcp --sport ntp --dport ntp -j ACCEPT
 /sbin/iptables -A INPUT -p udp --sport ntp --dport ntp -j ACCEPT
 
-logger -t classifying packets for shaping
-#voip="192.168.3.3"
-# classify packets
-# give "overhead" packets highest priority (VoIP, too)
-#iptables -t mangle -A POSTROUTING -o ${IFext} --source ${voip} -j CLASSIFY --set-class 1:10
-iptables -t mangle -A POSTROUTING -o ${IFext} -p tcp --syn -m length --length 40:68 -j CLASSIFY --set-class 1:10
-iptables -t mangle -A POSTROUTING -o ${IFext} -p tcp --tcp-flags ALL SYN,ACK -m length --length 40:68 -j CLASSIFY --set-class 1:10
-iptables -t mangle -A POSTROUTING -o ${IFext} -p tcp --tcp-flags ALL ACK -m length --length 40:100 -j CLASSIFY --set-class 1:10
-iptables -t mangle -A POSTROUTING -o ${IFext} -p tcp --tcp-flags ALL RST -j CLASSIFY --set-class 1:10
-iptables -t mangle -A POSTROUTING -o ${IFext} -p tcp --tcp-flags ALL ACK,RST -j CLASSIFY --set-class 1:10
-iptables -t mangle -A POSTROUTING -o ${IFext} -p tcp --tcp-flags ALL ACK,FIN -j CLASSIFY --set-class 1:10
-# interactive SSH traffic
-iptables -t mangle -A POSTROUTING -o ${IFext} -p tcp --sport ssh -m length --length 40:100 -j CLASSIFY --set-class 1:20
-iptables -t mangle -A POSTROUTING -o ${IFext} -p tcp --dport ssh -m length --length 40:100 -j CLASSIFY --set-class 1:20
-# interactive mail or web traffic
-iptables -t mangle -A POSTROUTING -o ${IFext} -p tcp -m multiport --sport http,imap,https,imaps -j CLASSIFY --set-class 1:30
-# dns lookups
-iptables -t mangle -A POSTROUTING -o ${IFext} -p tcp --dport domain -j CLASSIFY --set-class 1:30
-# ICMP, UDP
-iptables -t mangle -A POSTROUTING -o ${IFext} -p udp -j CLASSIFY --set-class 1:40
-iptables -t mangle -A POSTROUTING -o ${IFext} -p icmp -m length --length 28:1500 -m limit --limit 2/s --limit-burst 5 -j CLASSIFY --set-class 1:40
-# bulk traffic
-iptables -t mangle -A POSTROUTING -o ${IFext} -p tcp --sport ssh -m length --length 101: -j CLASSIFY --set-class 1:50
-iptables -t mangle -A POSTROUTING -o ${IFext} -p tcp --dport ssh -m length --length 101: -j CLASSIFY --set-class 1:50
-iptables -t mangle -A POSTROUTING -o ${IFext} -p tcp --sport 25 -j CLASSIFY --set-class 1:50
-iptables -t mangle -A POSTROUTING -o ${IFext} -p tcp --dport 6667 -j CLASSIFY --set-class 1:50
+#logger -t classifying packets for shaping
+##voip="192.168.3.3"
+## classify packets
+## give "overhead" packets highest priority (VoIP, too)
+##iptables -t mangle -A POSTROUTING -o ${IFext} --source ${voip} -j CLASSIFY --set-class 1:10
+#iptables -t mangle -A POSTROUTING -o ${IFext} -p tcp --syn -m length --length 40:68 -j CLASSIFY --set-class 1:10
+#iptables -t mangle -A POSTROUTING -o ${IFext} -p tcp --tcp-flags ALL SYN,ACK -m length --length 40:68 -j CLASSIFY --set-class 1:10
+#iptables -t mangle -A POSTROUTING -o ${IFext} -p tcp --tcp-flags ALL ACK -m length --length 40:100 -j CLASSIFY --set-class 1:10
+#iptables -t mangle -A POSTROUTING -o ${IFext} -p tcp --tcp-flags ALL RST -j CLASSIFY --set-class 1:10
+#iptables -t mangle -A POSTROUTING -o ${IFext} -p tcp --tcp-flags ALL ACK,RST -j CLASSIFY --set-class 1:10
+#iptables -t mangle -A POSTROUTING -o ${IFext} -p tcp --tcp-flags ALL ACK,FIN -j CLASSIFY --set-class 1:10
+## interactive SSH traffic
+#iptables -t mangle -A POSTROUTING -o ${IFext} -p tcp --sport ssh -m length --length 40:100 -j CLASSIFY --set-class 1:20
+#iptables -t mangle -A POSTROUTING -o ${IFext} -p tcp --dport ssh -m length --length 40:100 -j CLASSIFY --set-class 1:20
+## interactive mail or web traffic
+#iptables -t mangle -A POSTROUTING -o ${IFext} -p tcp -m multiport --sport http,imap,https,imaps -j CLASSIFY --set-class 1:30
+## dns lookups
+#iptables -t mangle -A POSTROUTING -o ${IFext} -p tcp --dport domain -j CLASSIFY --set-class 1:30
+## ICMP, UDP
+#iptables -t mangle -A POSTROUTING -o ${IFext} -p udp -j CLASSIFY --set-class 1:40
+#iptables -t mangle -A POSTROUTING -o ${IFext} -p icmp -m length --length 28:1500 -m limit --limit 2/s --limit-burst 5 -j CLASSIFY --set-class 1:40
+## bulk traffic
+#iptables -t mangle -A POSTROUTING -o ${IFext} -p tcp --sport ssh -m length --length 101: -j CLASSIFY --set-class 1:50
+#iptables -t mangle -A POSTROUTING -o ${IFext} -p tcp --dport ssh -m length --length 101: -j CLASSIFY --set-class 1:50
+#iptables -t mangle -A POSTROUTING -o ${IFext} -p tcp --sport 25 -j CLASSIFY --set-class 1:50
+#iptables -t mangle -A POSTROUTING -o ${IFext} -p tcp --dport 6667 -j CLASSIFY --set-class 1:50
 
 #logger -t iptables Setting port forwarding
 #dip="192.168.3.10"
@@ -133,9 +144,20 @@ logger -t iptables Finish up
 # push everything else to state table
 /sbin/iptables -A INPUT -j STATEFUL
 
+# Zugriff auf Router verbieten
+/sbin/iptables -A FORWARD ! -s 10.10.0.0/24 -d 192.168.0.0/16 -j DROP
+# IP-Bereiche Orga, VIP, Server
+/sbin/iptables -A FORWARD -s 10.10.0.0/24 -j ACCEPT
+/sbin/iptables -A FORWARD -s 10.10.1.0/24 -j ACCEPT
+/sbin/iptables -A FORWARD -s 10.10.10.0/24 -j ACCEPT
 # Alles was zurueck kommt und zu einer Verbindung gehoert erlauben
-/sbin/iptables -A FORWARD -i $IFext -m state --state ESTABLISHED,RELATED -j ACCEPT
+/sbin/iptables -A FORWARD -i eth1 -m state --state ESTABLISHED,RELATED -j ACCEPT
+/sbin/iptables -A FORWARD -i eth2 -m state --state ESTABLISHED,RELATED -j ACCEPT
+
 
 logger -t iptables Turning on NAT
 # masquerade from internal network
-/sbin/iptables -t nat -A POSTROUTING -s ${lannet} -o ${IFext} -j MASQUERADE
+#/sbin/iptables -t nat -A POSTROUTING -s ${lannet} -o ${IFext} -j MASQUERADE
+iptables -t nat -A POSTROUTING -o eth1 -j SNAT --to-source 192.168.0.2
+iptables -t nat -A POSTROUTING -o eth2 -j SNAT --to-source 192.168.1.2
+

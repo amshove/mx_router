@@ -1,0 +1,54 @@
+#! /bin/sh
+
+### BEGIN INIT INFO
+# Provides:		mx_firewall
+# Required-Start:	$remote_fs $syslog
+# Required-Stop:	$remote_fs $syslog
+# Default-Start:	2 3 4 5
+# Default-Stop:		
+# Short-Description:	Maxlan Firewall-Regeln
+### END INIT INFO
+
+# Version: 1
+
+set -e
+
+SCRIPT="/root/fw.sh"
+
+test -x $SCRIPT || exit 0
+
+. /lib/lsb/init-functions
+
+case "$1" in
+  start)
+	log_daemon_msg "Starting maxlan Firewall $SCRIPT" "mx_firewall"
+        $SCRIPT
+        if [ $? -eq 0 ]; then
+	    log_end_msg 0
+	else
+	    log_end_msg 1
+	fi
+	;;
+  stop)
+	log_daemon_msg "Stopping maxlan Firewall" "mx_firewall"
+        /sbin/iptables -P INPUT ACCEPT
+        /sbin/iptables -P FORWARD ACCEPT
+        /sbin/iptables -P OUTPUT ACCEPT
+        
+        /sbin/iptables -F
+        /sbin/iptables -F INPUT
+        /sbin/iptables -F OUTPUT
+        /sbin/iptables -F FORWARD
+        /sbin/iptables -F -t mangle
+        /sbin/iptables -F -t nat
+        /sbin/iptables -X
+        /sbin/iptables -Z
+        log_end_msg 0
+	;;
+
+  *)
+	log_action_msg "Usage: /etc/init.d/mx_firewall {start|stop}"
+	exit 1
+esac
+
+exit 0

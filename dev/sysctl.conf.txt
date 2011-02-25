@@ -1,0 +1,37 @@
+# Kernel sysctl configuration file for Red Hat Linux
+#
+# For binary values, 0 is disabled, 1 is enabled.  See sysctl(8) and
+# sysctl.conf(5) for more details.
+
+# Controls IP packet forwarding
+net.ipv4.ip_forward = 1
+
+# Controls source route verification
+net.ipv4.conf.default.rp_filter = 1
+
+# Controls the System Request debugging functionality of the kernel
+kernel.sysrq = 0
+
+# Controls whether core dumps will append the PID to the core filename.
+# Useful for debugging multi-threaded applications.
+kernel.core_uses_pid = 1
+
+# TF - extra goodies
+# Enable dynamic-ip address hacking
+net.ipv4.ip_dynaddr = 1
+# Use SYN cookies
+net.ipv4.tcp_syncookies = 1
+# Do selective acknowledgement
+net.ipv4.tcp_sack = 1
+# Use timestamping
+net.ipv4.tcp_timestamps = 1
+# Do TCP window scaling
+net.ipv4.tcp_window_scaling = 1
+# Ignore ICMP broadcast packets
+net.ipv4.icmp_echo_ignore_broadcasts = 1
+# Disable accepting of network route redirects
+net.ipv4.conf.all.accept_redirects = 0
+# Disable handling of source-routed packets
+net.ipv4.conf.all.accept_source_route = 0
+# Log packets originating from Mars
+net.ipv4.conf.all.log_martians = 1

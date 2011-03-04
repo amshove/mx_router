@@ -26,8 +26,14 @@ if($_SESSION["ad_level"] >= 1){
   echo "    <td><input type='text' name='ip'></td>";
   echo "  </tr>";
   echo "  <tr>";
-  echo "    <td>Bis wann?</td>";
-  echo "    <td></td>";
+  echo "    <td>Wie lange?</td>";
+  echo "    <td><select name='time'>
+    <option value='0'>dauerhaft</option>
+    <option value='10'>10 min</option>
+    <option value='30' selected>30 min</option>
+    <option value='60'>1 std</option>
+    <option value='120'>2 std</option>
+    </td>";
   echo "  </tr>";
   echo "  <tr>";
   echo "    <td>Grund:</td>";

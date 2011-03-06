@@ -99,7 +99,7 @@ if(!$logged_in){
 #  if($_SESSION["ad_level"] >= 4) echo " | <a class='navi' href='index.php?page=games'>Games administrieren</a>";
   if($_SESSION["ad_level"] >= 5) echo " | <a class='navi' href='index.php?page=user'>User administrieren</a>";
   echo " | <a class='navi' href='index.php?logout=true'>Logout</a>";
-  echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <font style='font-size: 10px'>Router Webinterface by <a style='color:#FFFFFF; font-size: 10px;' href='http://www.amshove.net/'>Torsten Amshove</a></font>";
+  echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <font style='font-size: 10px'>Router Webinterface by <a style='color:#FFFFFF; font-size: 10px;' href='http://www.amshove.net/' target='_blank'>Torsten Amshove</a></font>";
   echo "</div>";
   switch($_GET["page"]){
     case "anlegen": include("history.php"); break;

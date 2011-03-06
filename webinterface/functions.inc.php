@@ -24,4 +24,8 @@ function ping($ip){
   exec("ping -n -q -c 1 -W 1 $ip > /dev/null 2>&1",$retarr,$retrc);
   return $retrc;
 }
+
+function iptables_add($ip){
+  return true;
+}
 ?>

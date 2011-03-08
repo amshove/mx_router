@@ -102,7 +102,7 @@ if(!$logged_in){
   echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <font style='font-size: 10px'>Router Webinterface by <a style='color:#FFFFFF; font-size: 10px;' href='http://www.amshove.net/' target='_blank'>Torsten Amshove</a></font>";
   echo "</div>";
   switch($_GET["page"]){
-    case "anlegen": include("history.php"); break;
+    case "history": include("history.php"); break;
 #    case "overview": include("overview.php"); break;
 #    case "server": include("server.php"); break;
 #    case "games": include("games.php"); break;

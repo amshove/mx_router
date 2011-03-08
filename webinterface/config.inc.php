@@ -30,4 +30,6 @@ $leitungen = array(
     "subnets" => "Orga, Server, VIP"
   )
 );
+
+setlocale(LC_ALL, 'de_DE@euro', 'de_DE.utf8', 'de_DE', 'de', 'ge');
 ?>

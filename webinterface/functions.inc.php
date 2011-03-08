@@ -28,4 +28,8 @@ function ping($ip){
 function iptables_add($ip){
   return true;
 }
+
+function iptables_del($ip){
+  return true;
+}
 ?>

@@ -38,6 +38,17 @@ if($_SESSION["ad_level"] >= 1){
     }
   }
 
+  if($_GET["cmd"] == "del" && !empty($_GET["id"]) && is_numeric($_GET["id"])){
+    $id = mysql_real_escape_string($_GET["id"]);
+    $ip = @mysql_result(mysql_query("SELECT ip FROM history WHERE id = '".$id."' LIMIT 1"),0,"ip");
+    if(!empty($ip) && iptables_del($ip)){
+      mysql_query("UPDATE history SET active = 0, del_user = '".$_SESSION["user_name"]."', del_date = '".time()."' WHERE id = '".$id."' LIMIT 1");
+      echo "<div class='meldung_ok'>Regel erfolgreich gel&ouml;scht.</div><br>";
+    }else{
+      echo "<div class='meldung_error'>Regel konnte nicht gel&ouml;scht werden!</div><br>";
+    }
+  }
+
 
   echo "<h3>Neue Freigabe erteilen</h3>";
   echo "<form action='index.php' method='POST'>";
@@ -69,8 +80,9 @@ if($_SESSION["ad_level"] >= 1){
   echo "</table>";
   echo "</form><br><br>";
 
+
   echo "<h3>Aktuelle Freigaben</h3>";
-  echo "<table>";
+  echo "<table class='hover_row'>";
   echo "  <tr>";
   echo "    <th width='100'>IP</th>";
   echo "    <th width='150'>Grund</th>";
@@ -78,18 +90,22 @@ if($_SESSION["ad_level"] >= 1){
   echo "    <th width='100'>L&auml;uft ab ..</th>";
   echo "    <th width='30'>&nbsp;</th>";
   echo "  </tr>";
+  $i = 0;
   $query = mysql_query("SELECT * FROM history WHERE active = 1 ORDER BY INET_ATON(ip)");
   while($row = mysql_fetch_assoc($query)){ 
-    echo "<tr>";
+    echo "<tr";
+    if(($i % 2) > 0) echo " class='odd_row'";
+    echo ">";
     echo "  <td valign='top'>".$row["ip"]."</td>";
     echo "  <td valign='top'>".nl2br($row["reason"])."</td>";
     echo "  <td valign='top'>".$row["add_user"]."</td>";
     echo "  <td valign='top' align='center'>";
     if(empty($row["end_date"])) echo "nie";
-    else echo date("D H:i",$row["end_date"]);
+    else echo strftime("%a, %R Uhr",$row["end_date"]);
     echo "  </td>";
     echo "  <td valign='top'><a onClick='return confirm(\"Freigabe f&uuml;r ".$row["ip"]." wirklich l&ouml;schen?\");' href='index.php?cmd=del&id=".$row["id"]."'>del</a></td>";
     echo "</tr>";
+    $i++;
   }
   echo "</table>";
 }

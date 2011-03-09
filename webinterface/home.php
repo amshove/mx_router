@@ -90,11 +90,15 @@ if($_SESSION["ad_level"] >= 1){
   echo "    <th width='100'>L&auml;uft ab ..</th>";
   echo "    <th width='30'>&nbsp;</th>";
   echo "  </tr>";
+
+  $iptables_lines = iptables_list();
+
   $i = 0;
   $query = mysql_query("SELECT * FROM history WHERE active = 1 ORDER BY INET_ATON(ip)");
   while($row = mysql_fetch_assoc($query)){ 
     echo "<tr";
     if(($i % 2) > 0) echo " class='odd_row'";
+    if(!in_array($row["ip"],$iptables_lines)) echo " style='background-color: #CC9999;'";
     echo ">";
     echo "  <td valign='top'>".$row["ip"]."</td>";
     echo "  <td valign='top'>".nl2br($row["reason"])."</td>";

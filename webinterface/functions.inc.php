@@ -79,4 +79,22 @@ function iptables_list(){
   }
   return $array;
 }
+
+function rule_list(){
+  global $ip_cmd;
+  $cmd = $ip_cmd." rule show | grep -v local | grep -v main | grep -v default";
+  exec($cmd,$retarr,$retrc);
+  if($retrc != 0){
+    if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
+    return false;
+  }
+  $array = array();
+  foreach($retarr as $line){
+    $fields = preg_split("/\s/",$line, -1, PREG_SPLIT_NO_EMPTY);
+    if(is_numeric(substr($fields[0],0,-1))){
+      $array[$fields[4]][$fields[2]] = substr($fields[3],0,-1);
+    }
+  }
+  return $array;
+}
 ?>

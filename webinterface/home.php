@@ -11,7 +11,7 @@ if($_SESSION["ad_level"] >= 1){
   foreach($leitungen as $leitung){
     if(ping($leitung["ip"]) == 0) $class = "meldung_ok";
     else $class = "meldung_error";
-    echo "  <td class='$class' width='70' title='".$leitung["subnets"]."' align='center'>".$leitung["name"]."</td>";
+    echo "  <td class='$class' width='70' align='center'>".$leitung["name"]."</td>";
   }
   echo "  </tr>";
   echo "</table><br><br>";

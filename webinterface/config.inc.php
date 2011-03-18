@@ -12,22 +12,30 @@ $mysql_db = "router";
 
 // Settings
 # Auf dem Server muss ein sudo eingerichtet werden:
-# www-data ALL=NOPASSWD: /sbin/iptables
+# www-data ALL=NOPASSWD: /sbin/iptables, /sbin/ip
 $iptables_cmd = "sudo /sbin/iptables";
+$ip_cmd = "sudo /sbin/ip";
 
 // Default-PW, was gesetzt wird
 $default_pw = "default";
+
+$aliases = array(
+  "10.10.0.0/20" => "Alle",
+  "10.10.0.0/24" => "Orga",
+  "10.10.1.0/24" => "Server",
+  "10.10.10.0/24" => "VIP"
+);
 
 $leitungen = array(
   0 => array(
     "name" => "DSL Kamp",
     "ip" => "80.237.237.160",
-    "subnets" => "default"
+    "table" => "kamp"
   ),
   1 => array(
     "name" => "DSL Koch",
     "ip" => "80.237.237.161",
-    "subnets" => "Orga, Server, VIP"
+    "table" => "koch"
   )
 );
 

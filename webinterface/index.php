@@ -94,7 +94,7 @@ if(!$logged_in){
   // Eigentliche Seite
   echo "<div class='navi'><a class='navi' href='index.php'>Home</a>";
   echo " | <a class='navi' href='index.php?page=history'>History</a>";
-#  echo " | <a class='navi' href='index.php?page=overview'>&Uuml;bersicht</a>";
+  echo " | <a class='navi' href='index.php?page=leitungen'>Leitungen</a>";
 #  if($_SESSION["ad_level"] >= 4) echo " | <a class='navi' href='index.php?page=server'>Server administrieren</a>";
 #  if($_SESSION["ad_level"] >= 4) echo " | <a class='navi' href='index.php?page=games'>Games administrieren</a>";
   if($_SESSION["ad_level"] >= 5) echo " | <a class='navi' href='index.php?page=user'>User administrieren</a>";
@@ -103,7 +103,7 @@ if(!$logged_in){
   echo "</div>";
   switch($_GET["page"]){
     case "history": include("history.php"); break;
-#    case "overview": include("overview.php"); break;
+    case "leitungen": include("leitungen.php"); break;
 #    case "server": include("server.php"); break;
 #    case "games": include("games.php"); break;
     case "user": include("user.php"); break;

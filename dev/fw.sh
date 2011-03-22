@@ -145,14 +145,14 @@ logger -t iptables Finish up
 /sbin/iptables -A INPUT -j STATEFUL
 
 # Zugriff auf Router verbieten
-/sbin/iptables -A FORWARD ! -s 10.10.0.0/24 -d 192.168.0.0/16 -j DROP
+/sbin/iptables -A FORWARD ! -s 10.10.0.0/24 -d 192.168.0.0/16 -j DROP -m comment --comment "Zugriff auf die DSL-Router"
 # IP-Bereiche Orga, VIP, Server
-/sbin/iptables -A FORWARD -s 10.10.0.0/24 -j ACCEPT
-/sbin/iptables -A FORWARD -s 10.10.1.0/24 -j ACCEPT
-/sbin/iptables -A FORWARD -s 10.10.10.0/24 -j ACCEPT
+/sbin/iptables -A FORWARD -s 10.10.0.0/24 -j ACCEPT -m comment --comment "Orga"
+/sbin/iptables -A FORWARD -s 10.10.1.0/24 -j ACCEPT -m comment --comment "Server"
+/sbin/iptables -A FORWARD -s 10.10.10.0/24 -j ACCEPT -m comment --comment "VIP"
 # Alles was zurueck kommt und zu einer Verbindung gehoert erlauben
-/sbin/iptables -A FORWARD -i eth1 -m state --state ESTABLISHED,RELATED -j ACCEPT
-/sbin/iptables -A FORWARD -i eth2 -m state --state ESTABLISHED,RELATED -j ACCEPT
+/sbin/iptables -A FORWARD -i eth1 -m state --state ESTABLISHED,RELATED -j ACCEPT -m comment --comment "Bestehende Verbindungen von extern"
+/sbin/iptables -A FORWARD -i eth2 -m state --state ESTABLISHED,RELATED -j ACCEPT -m comment --comment "Bestehende Verbindungen von extern"
 
 
 logger -t iptables Turning on NAT

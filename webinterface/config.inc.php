@@ -39,5 +39,22 @@ $leitungen = array(
   )
 );
 
+$global_ports = array(
+  "Steam" => array(  # https://support.steampowered.com/kb_article.php?ref=8571-GLVN-8711
+    "tcp" => "27014:27050",
+    "udp" => "27000:27030,4380,1500,3005,3101,28960"
+  ),
+  "Starcraft II" => array(
+    "tcp" => "6112:6119,4000,3724",
+    "udp" => "6112:6119,4000,3724"
+  ),
+  "Xfire" => array(  # http://www.xfire.com/faq/#158
+    "tcp" => "25999"
+  ),
+  "ICQ" => array(
+    "tcp" => "5190"
+  )
+);
+
 setlocale(LC_ALL, 'de_DE@euro', 'de_DE.utf8', 'de_DE', 'de', 'ge');
 ?>

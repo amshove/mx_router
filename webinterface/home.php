@@ -47,8 +47,20 @@ if($_SESSION["ad_level"] >= 1){
     }else{
       echo "<div class='meldung_error'>Regel konnte nicht gel&ouml;scht werden!</div><br>";
     }
+  }elseif($_GET["cmd"] == "ports"){
+    $status = false;
+    if($_GET["do"] == "on"){
+      $status = ports_add($_GET["ports"]);
+    }elseif($_GET["do"] == "off"){
+      $status = ports_del($_GET["ports"]);
+    }
+    if($status) echo "<div class='meldung_ok'>Regel erfolgreich ge&auml;ndert.</div><br>";
+    else echo "<div class='meldung_error'>Regel nicht erfolgreich ge&auml;ndert.</div><br>";
   }
 
+
+  echo "<table style='border: 0px;'>";
+  echo "  <tr><td valing='top'>";
 
   echo "<h3>Neue Freigabe erteilen</h3>";
   echo "<form action='index.php' method='POST'>";
@@ -79,6 +91,39 @@ if($_SESSION["ad_level"] >= 1){
   echo "  </tr>";
   echo "</table>";
   echo "</form><br><br>";
+
+  echo "  </td><td width='50'>&nbsp;</td><td valign='top'>";
+
+  echo "<h3>Globale Freigaben</h3>";
+  echo "<table>";
+  echo "  <tr>";
+  echo "    <th width='100'>&nbsp;</th>";
+  echo "  </tr>";
+  foreach($global_ports as $name => $ports){
+    $status = ports_open($name);
+    if($status[0] == true && $status[1] == true){
+      $class = "meldung_ok";
+      $do = "off";
+    }elseif($status[0] == false && $status[1] == false){
+      $class = "meldung_error";
+      $do = "on";
+    }else{ 
+      $class = "meldung_notify";
+      $do = "off";
+    }
+
+    echo "<tr>";
+    echo "  <th class='$class'>";
+    if($_SESSION["ad_level"] >= 4) echo "<a href='index.php?cmd=ports&do=$do&ports=$name' onClick='return confirm(\"Die globale Regel f&uuml;r $name wirklich &auml;ndern?\");'>";
+    echo $name;
+    if($_SESSION["ad_level"] >= 4) echo "</a>";
+    echo "  </th>";
+    echo "</tr>";
+  }
+  echo "</table>";
+
+  echo "  </td></tr>";
+  echo "</table>";
 
 
   echo "<h3>Aktuelle Freigaben</h3>";

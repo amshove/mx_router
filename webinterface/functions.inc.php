@@ -80,6 +80,117 @@ function iptables_list(){
   return $array;
 }
 
+function ports_add($name){
+  global $iptables_cmd,$global_ports;
+
+  if(empty($global_ports[$name]["tcp"]) && empty($global_ports[$name]["udp"])) return false;
+
+  if(!empty($global_ports[$name]["tcp"])){
+    $cmd = $iptables_cmd." -I FORWARD -m multiport -p tcp --dports ".$global_ports[$name]["tcp"]." -j ACCEPT -m comment --comment \"Global-Ports: $name\"";
+    exec($cmd,$retarr,$retrc);
+    if($retrc != 0){
+      if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
+      return false;
+    }
+  }
+
+  if(!empty($global_ports[$name]["udp"])){
+    $cmd = $iptables_cmd." -I FORWARD -m multiport -p udp --dports ".$global_ports[$name]["udp"]." -j ACCEPT -m comment --comment \"Global-Ports: $name\"";
+    exec($cmd,$retarr,$retrc);
+    if($retrc != 0){
+      if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function ports_del($name){
+  global $iptables_cmd,$global_ports;
+
+  if(empty($global_ports[$name]["tcp"]) && empty($global_ports[$name]["udp"])) return false;
+
+  if(!empty($global_ports[$name]["tcp"])){
+    $cmd = $iptables_cmd." -L FORWARD -n --line-numbers | grep ACCEPT";
+    exec($cmd,$retarr,$retrc);
+    if($retrc != 0){
+      if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
+      return false;
+    }
+    foreach($retarr as $line){
+      $fields = preg_split("/\s/",$line, -1, PREG_SPLIT_NO_EMPTY);
+      if($fields[1] == "ACCEPT" && $fields[4] == "0.0.0.0/0" && $fields[5] == "0.0.0.0/0" && $fields[6] == "multiport" && $fields[7] == "dports"){
+        if($fields[2] == "tcp" && $fields[8] == $global_ports[$name]["tcp"]){
+          $num = $fields[0];
+          if(is_numeric($num)){
+            $cmd = $iptables_cmd." -D FORWARD ".$num;
+            unset($retarr,$retrc);
+            exec($cmd,$retarr,$retrc);
+            if($retrc != 0){
+              if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
+              return false;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if(!empty($global_ports[$name]["udp"])){
+    $cmd = $iptables_cmd." -L FORWARD -n --line-numbers | grep ACCEPT";
+    exec($cmd,$retarr,$retrc);
+    if($retrc != 0){
+      if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
+      return false;
+    }
+    foreach($retarr as $line){
+      $fields = preg_split("/\s/",$line, -1, PREG_SPLIT_NO_EMPTY);
+      if($fields[1] == "ACCEPT" && $fields[4] == "0.0.0.0/0" && $fields[5] == "0.0.0.0/0" && $fields[6] == "multiport" && $fields[7] == "dports"){
+        if($fields[2] == "udp" && $fields[8] == $global_ports[$name]["udp"]){
+          $num = $fields[0];
+          if(is_numeric($num)){
+            $cmd = $iptables_cmd." -D FORWARD ".$num;
+            unset($retarr,$retrc);
+            exec($cmd,$retarr,$retrc);
+            if($retrc != 0){
+              if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
+              return false;
+            }
+          }
+        }
+      }
+    }
+  }
+  return true;
+}
+
+function ports_open($name){
+  global $iptables_cmd,$global_ports;
+
+  if(empty($global_ports[$name]["tcp"]) && empty($global_ports[$name]["udp"])) return false;
+
+  $cmd = $iptables_cmd." -n -L FORWARD | grep ACCEPT";
+  exec($cmd,$retarr,$retrc);
+  if($retrc != 0){
+    if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
+    return false;
+  }
+  $tcp = false;
+  $udp = false;
+  foreach($retarr as $line){
+    $fields = preg_split("/\s/",$line, -1, PREG_SPLIT_NO_EMPTY);
+    if($fields[0] == "ACCEPT" && $fields[3] == "0.0.0.0/0" && $fields[4] == "0.0.0.0/0" && $fields[5] == "multiport" && $fields[6] == "dports"){
+      if($fields[1] == "tcp" && $fields[7] == $global_ports[$name]["tcp"]) $tcp = true;
+      if($fields[1] == "udp" && $fields[7] == $global_ports[$name]["udp"]) $udp = true;
+    }
+  }
+  if(empty($global_ports[$name]["tcp"])) $tcp = $udp;
+  if(empty($global_ports[$name]["udp"])) $udp = $tcp;
+
+  return array($tcp,$udp);
+}
+
 function rule_list(){
   global $ip_cmd;
   $cmd = $ip_cmd." rule show | grep -v local | grep -v main | grep -v default";

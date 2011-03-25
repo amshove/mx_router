@@ -22,6 +22,7 @@ if($_GET["logout"]){
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
   <title>maxlan Router Webinterface</title>
+  <link rel="SHORTCUT ICON" href="favicon.ico" type="image/x-icon">
   <link rel="stylesheet" type="text/css" href="style.css" />
 </head>
 <body>

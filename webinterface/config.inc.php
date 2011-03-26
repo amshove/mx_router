@@ -45,8 +45,8 @@ $global_ports = array(
     "udp" => "27000:27030,4380,1500,3005,3101,28960"
   ),
   "Starcraft II" => array(
-    "tcp" => "6112:6119,4000,3724",
-    "udp" => "6112:6119,4000,3724"
+    "tcp" => "1119",
+    "udp" => "1119"
   ),
   "Xfire" => array(  # http://www.xfire.com/faq/#158
     "tcp" => "25999"

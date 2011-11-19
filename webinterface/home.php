@@ -96,10 +96,15 @@ if($_SESSION["ad_level"] >= 1){
 
   echo "  </td><td width='50'>&nbsp;</td><td valign='top'>";
 
+  $iptables_lines = iptables_list();
+  $iptables_ips = $iptables_lines[0];
+  $iptables_traffic = $iptables_lines[1];
+
   echo "<h3>Globale Freigaben</h3>";
   echo "<table>";
   echo "  <tr>";
   echo "    <th width='100'>&nbsp;</th>";
+  echo "    <th width='100'>Traffic</th>";
   echo "  </tr>";
   foreach($global_ports as $name => $ports){
     $status = ports_open($name);
@@ -119,8 +124,27 @@ if($_SESSION["ad_level"] >= 1){
     if($_SESSION["ad_level"] >= 4) echo "<a href='index.php?cmd=ports&do=$do&ports=$name' onClick='return confirm(\"Die globale Regel f&uuml;r $name wirklich &auml;ndern?\");'>";
     echo $name;
     if($_SESSION["ad_level"] >= 4) echo "</a>";
+    echo "    <td align='center'>".$iptables_traffic[$name]."</td>";
     echo "  </th>";
     echo "</tr>";
+  }
+  echo "</table>";
+
+  echo "  </td><td width='50'>&nbsp;</td><td valign='top'>";
+
+  echo "<h3>Default Freigaben</h3>";
+  echo "<table>";
+  echo "  <tr>";
+  echo "    <th width='150'>&nbsp;</th>";
+  echo "    <th width='100'>Traffic</th>";
+  echo "  </tr>";
+  foreach($aliases as $k => $v){
+    if($iptables_traffic[$k]){
+      echo "<tr>";
+      echo "  <td>".$k." (".$v.")</td>";
+      echo "  <td align='center'>".$iptables_traffic[$k]."</td>";
+      echo "</tr>";
+    }
   }
   echo "</table>";
 
@@ -134,15 +158,11 @@ if($_SESSION["ad_level"] >= 1){
   echo "    <th width='100'>IP</th>";
   echo "    <th width='80'>Sitzplatz</th>";
   echo "    <th width='80'>Traffic</th>";
-  echo "    <th width='150'>Grund</th>";
+  echo "    <th width='200'>Grund</th>";
   echo "    <th width='130'>Angelegt von</th>";
   echo "    <th width='100'>L&auml;uft ab ..</th>";
   echo "    <th width='30'>&nbsp;</th>";
   echo "  </tr>";
-
-  $iptables_lines = iptables_list();
-  $iptables_ips = $iptables_lines[0];
-  $iptables_traffic = $iptables_lines[1];
 
   $i = 0;
   $query = mysql_query("SELECT * FROM history WHERE active = 1 ORDER BY INET_ATON(ip)");

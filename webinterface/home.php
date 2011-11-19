@@ -23,6 +23,8 @@ if($_SESSION["ad_level"] >= 1){
       echo "<div class='meldung_error'>IP muss angegeben werden!</div><br>";
     }elseif(!preg_match("/^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$/",$_POST["ip"]) && !preg_match("/^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\/[0-9]{1,2}$/",$_POST["ip"])){
       echo "<div class='meldung_error'>Keine g&uuml;ltige IP-Adresse angegeben.</div><br>";
+    }elseif(mysql_num_rows(mysql_query("SELECT id FROM history WHERE ip = '".$_POST["ip"]."' AND active = 1")) > 0){
+      echo "<div class='meldung_error'>Es gibt bereits eine Regel f&uuml;r dir IP.</div><br>";
     }else{
       if(iptables_add($_POST["ip"])){
         $now = time();
@@ -130,6 +132,7 @@ if($_SESSION["ad_level"] >= 1){
   echo "<table class='hover_row'>";
   echo "  <tr>";
   echo "    <th width='100'>IP</th>";
+  echo "    <th width='80'>Traffic</th>";
   echo "    <th width='150'>Grund</th>";
   echo "    <th width='130'>Angelegt von</th>";
   echo "    <th width='100'>L&auml;uft ab ..</th>";
@@ -137,15 +140,18 @@ if($_SESSION["ad_level"] >= 1){
   echo "  </tr>";
 
   $iptables_lines = iptables_list();
+  $iptables_ips = $iptables_lines[0];
+  $iptables_traffic = $iptables_lines[1];
 
   $i = 0;
   $query = mysql_query("SELECT * FROM history WHERE active = 1 ORDER BY INET_ATON(ip)");
   while($row = mysql_fetch_assoc($query)){ 
     echo "<tr";
     if(($i % 2) > 0) echo " class='odd_row'";
-    if(!in_array($row["ip"],$iptables_lines)) echo " style='background-color: #CC9999;'";
+    if(!in_array($row["ip"],$iptables_ips)) echo " style='background-color: #CC9999;'";
     echo ">";
     echo "  <td valign='top'>".$row["ip"]."</td>";
+    echo "  <td valign='top' align='center'>".$iptables_traffic[$row["ip"]]."</td>";
     echo "  <td valign='top'>".nl2br($row["reason"])."</td>";
     echo "  <td valign='top'>".$row["add_user"]."</td>";
     echo "  <td valign='top' align='center'>";

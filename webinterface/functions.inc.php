@@ -64,7 +64,7 @@ function iptables_del($ip){
 
 function iptables_list(){
   global $iptables_cmd;
-  $cmd = $iptables_cmd." -n -L FORWARD | grep ACCEPT";
+  $cmd = $iptables_cmd." -vn -L FORWARD | grep ACCEPT";
   exec($cmd,$retarr,$retrc);
   if($retrc != 0){
     if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
@@ -73,11 +73,12 @@ function iptables_list(){
   $array = array();
   foreach($retarr as $line){
     $fields = preg_split("/\s/",$line, -1, PREG_SPLIT_NO_EMPTY);
-    if($fields[0] == "ACCEPT"){
-      $array[] = $fields[3];
+    if($fields[2] == "ACCEPT"){
+      $traffic[$fields[7]] = $fields[1];
+      $array[] = $fields[7];
     }
   }
-  return $array;
+  return array($array,$traffic);
 }
 
 function ports_add($name){

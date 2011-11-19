@@ -74,7 +74,17 @@ function iptables_list(){
   foreach($retarr as $line){
     $fields = preg_split("/\s/",$line, -1, PREG_SPLIT_NO_EMPTY);
     if($fields[2] == "ACCEPT"){
-      $traffic[$fields[7]] = $fields[1];
+      $name = $fields[7];
+
+      if($name == "0.0.0.0/0" && $fields[12] == "/*"){
+        $name = $fields[14];
+        for($i=15; $i<=20; $i++){
+          if($fields[$i] != "*/") $name .= " ".$fields[$i];
+          else break;
+        }
+      }
+
+      $traffic[$name] = $fields[1];
       $array[] = $fields[7];
     }
   }

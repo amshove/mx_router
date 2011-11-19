@@ -132,6 +132,7 @@ if($_SESSION["ad_level"] >= 1){
   echo "<table class='hover_row'>";
   echo "  <tr>";
   echo "    <th width='100'>IP</th>";
+  echo "    <th width='80'>Sitzplatz</th>";
   echo "    <th width='80'>Traffic</th>";
   echo "    <th width='150'>Grund</th>";
   echo "    <th width='130'>Angelegt von</th>";
@@ -151,6 +152,7 @@ if($_SESSION["ad_level"] >= 1){
     if(!in_array($row["ip"],$iptables_ips)) echo " style='background-color: #CC9999;'";
     echo ">";
     echo "  <td valign='top'>".$row["ip"]."</td>";
+    echo "  <td valign='top' align='center'>".str_replace(array("Sitz-",".lan"),"",gethostbyaddr($row["ip"]))."</td>";
     echo "  <td valign='top' align='center'>".$iptables_traffic[$row["ip"]]."</td>";
     echo "  <td valign='top'>".nl2br($row["reason"])."</td>";
     echo "  <td valign='top'>".$row["add_user"]."</td>";

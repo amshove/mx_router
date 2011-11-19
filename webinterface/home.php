@@ -44,7 +44,7 @@ if($_SESSION["ad_level"] >= 1){
     $id = mysql_real_escape_string($_GET["id"]);
     $ip = @mysql_result(mysql_query("SELECT ip FROM history WHERE id = '".$id."' LIMIT 1"),0,"ip");
     if(!empty($ip) && iptables_del($ip)){
-      mysql_query("UPDATE history SET active = 0, del_user = '".$_SESSION["user_name"]."', del_date = '".time()."' WHERE id = '".$id."' LIMIT 1");
+      mysql_query("UPDATE history SET active = 0, del_user = '".$_SESSION["user_name"]."', del_date = '".time()."' WHERE id = '".$id."'");
       echo "<div class='meldung_ok'>Regel erfolgreich gel&ouml;scht.</div><br>";
     }else{
       echo "<div class='meldung_error'>Regel konnte nicht gel&ouml;scht werden!</div><br>";

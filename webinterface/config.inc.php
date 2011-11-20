@@ -6,8 +6,8 @@
 
 // MySQL-Settings
 $mysql_host = "localhost";
-$mysql_user = "torsten";
-$mysql_pw = "test123";
+$mysql_user = "router";
+$mysql_pw = "8rGGAx8XDes9cV3a";
 $mysql_db = "router";
 
 // Settings
@@ -17,7 +17,7 @@ $iptables_cmd = "sudo /sbin/iptables";
 $ip_cmd = "sudo /sbin/ip";
 
 // Default-PW, was gesetzt wird
-$default_pw = "default";
+$default_pw = "cann123";
 
 $aliases = array(
   "10.10.0.0/20" => "Alle",
@@ -36,6 +36,11 @@ $leitungen = array(
     "name" => "DSL Koch",
     "ip" => "80.237.237.161",
     "table" => "koch"
+  ),
+  2 => array(
+    "name" => "DSL Peter",
+    "ip" => "178.77.78.40",
+    "table" => "peter"
   )
 );
 
@@ -53,6 +58,24 @@ $global_ports = array(
   ),
   "ICQ" => array(
     "tcp" => "5190"
+  ),
+  "CoD MW2" => array(
+    "tcp" => "3074,27000:27050",
+    "udp" => "3074,8766"
+  ),
+  "LoL (+ HTTP)" => array(
+    "tcp" => "80,443,2099,5223,56000:60000",
+    "udp" => "80,2001,3000:6000,10000:60000"
+  ),
+#  "BF3" => array( # ungetestet
+#    "tcp" => "80,443,9988,17502,20000:30000,42127",
+#    "udp" => "3659,14000:14016,22990:23006,25200:25300"
+#  )
+  "HTTP" => array(
+    "tcp" => "80,443"
+  ),
+  "Mails" => array(
+    "tcp" => "110,143,25,465,585,993,995"
   )
 );
 

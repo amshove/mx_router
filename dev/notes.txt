@@ -47,6 +47,9 @@ server rustime01.rus.uni-stuttgart.de
 server ntp.probe-networks.de
 restrict 10.10.0.0 mask 255.255.240.0 nomodify notrap
 - ntpq -c lpeer
+- /etc/crontab
+*/5 *	* * *	root	/usr/bin/php /var/www/cronjob/del_rules.php > /dev/null 2>&1
+
 
 
 MUNIN:

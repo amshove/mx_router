@@ -1,7 +1,5 @@
-# Kernel sysctl configuration file for Red Hat Linux
-#
-# For binary values, 0 is disabled, 1 is enabled.  See sysctl(8) and
-# sysctl.conf(5) for more details.
+# Disable IPv6
+net.ipv6.conf.all.disable_ipv6 = 1
 
 # Controls IP packet forwarding
 net.ipv4.ip_forward = 1

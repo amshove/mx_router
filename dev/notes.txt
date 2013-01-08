@@ -32,9 +32,12 @@ ip route flush table kamp
 ip route flush table koch
 ip link set eth1 down
 ip link set eth2 down
-- apt-get install apache2 libapache2-mod-php5 php5-mysql php5 php5-cli
-- index.php
+- apt-get install apache2 libapache2-mod-php5 php5-mysql php5 php5-cli mysql-server phpmyadmin
+???- index.php
+- phpmyadmin -> user & DB "router"
+- mysql -u router -p router < database.sql   # Login: admin:cann123
 - /etc/sudoers :: www-data ALL= NOPASSWD: /sbin/iptables
+- apt-get remove apparmor
 - apt-get install ntp
 - /etc/ntp.conf
 server ptbtime1.ptb.de iburst

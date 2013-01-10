@@ -10,7 +10,7 @@ if($_SESSION["ad_level"] >= 1){
   echo "  <tr>";
   echo "    <th width='100'>Leitung:</th>";
   foreach($leitungen as $leitung){
-    if(ping($leitung["ip"]) == 0) $class = "meldung_ok";
+    if(ping($leitung["ip"],$leitung["eth"]) == 0) $class = "meldung_ok";
     else $class = "meldung_error";
     echo "  <th class='$class' width='130'>".$leitung["name"]."</th>";
   }

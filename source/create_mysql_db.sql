@@ -1,7 +1,3 @@
---
--- Tabellenstruktur für Tabelle `history`
---
-
 CREATE TABLE IF NOT EXISTS `history` (
   `id` int(11) NOT NULL auto_increment,
   `user_id` int(11) NOT NULL,
@@ -16,17 +12,6 @@ CREATE TABLE IF NOT EXISTS `history` (
   PRIMARY KEY  (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
---
--- Daten für Tabelle `history`
---
-
-
--- --------------------------------------------------------
-
---
--- Tabellenstruktur für Tabelle `user`
---
-
 CREATE TABLE IF NOT EXISTS `user` (
   `id` int(11) NOT NULL auto_increment,
   `login` varchar(200) NOT NULL,
@@ -36,9 +21,7 @@ CREATE TABLE IF NOT EXISTS `user` (
   PRIMARY KEY  (`id`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 AUTO_INCREMENT=2 ;
 
---
--- Daten für Tabelle `user`
---
-
+-- Default Admin: admin
+-- Default PW: mx_router
 INSERT INTO `user` (`id`, `login`, `pw`, `name`, `ad_level`) VALUES
-(1, 'admin', '71910e4b0a625f5b8126095bda01df5fc76c2351', 'Default Admin', 5);
+(1, 'admin', '878bbcc0bad81a23192f0e55a037c189fb81a3fb', 'Default Admin', 5);

@@ -3,11 +3,12 @@
 # Router Webinterface                                      #
 # Copyright (C) 2010 Torsten Amshove <torsten@amshove.net> #
 ############################################################
+require("leitungen.inc.php");
 
 // MySQL-Settings
 $mysql_host = "localhost";
 $mysql_user = "router";
-$mysql_pw = "8rGGAx8XDes9cV3a";
+$mysql_pw = "--MYSQL_PW--";
 $mysql_db = "router";
 
 // Settings
@@ -17,31 +18,13 @@ $iptables_cmd = "sudo /sbin/iptables";
 $ip_cmd = "sudo /sbin/ip";
 
 // Default-PW, was gesetzt wird
-$default_pw = "cann123";
+$default_pw = "mx_router";
 
 $aliases = array(
   "10.10.0.0/20" => "Alle",
   "10.10.0.0/24" => "Orga",
   "10.10.1.0/24" => "Server",
   "10.10.10.0/24" => "VIP"
-);
-
-$leitungen = array(
-  0 => array(
-    "name" => "DSL Kamp",
-    "ip" => "80.237.237.160",
-    "table" => "kamp"
-  ),
-  1 => array(
-    "name" => "DSL Koch",
-    "ip" => "80.237.237.161",
-    "table" => "koch"
-  ),
-  2 => array(
-    "name" => "DSL Peter",
-    "ip" => "178.77.78.40",
-    "table" => "peter"
-  )
 );
 
 $global_ports = array(

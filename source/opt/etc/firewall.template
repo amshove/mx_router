@@ -1,0 +1,61 @@
+logger -t iptables Setting default policies
+# chain policies
+# drop everything and open stuff as necessary
+/sbin/iptables -P INPUT DROP
+/sbin/iptables -P FORWARD DROP
+/sbin/iptables -P OUTPUT ACCEPT
+
+logger -t iptables Flushing tables
+/sbin/iptables -F
+/sbin/iptables -F INPUT
+/sbin/iptables -F OUTPUT
+/sbin/iptables -F FORWARD
+/sbin/iptables -F -t mangle
+/sbin/iptables -F -t nat
+/sbin/iptables -X
+/sbin/iptables -Z
+
+logger -t iptables Creating user tables + rules
+# Stateful table
+/sbin/iptables -N STATEFUL
+/sbin/iptables -F STATEFUL
+/sbin/iptables -I STATEFUL -m state --state ESTABLISHED,RELATED -j ACCEPT
+/sbin/iptables -A STATEFUL -j DROP
+
+# SYN protection table
+/sbin/iptables -N SYN-FLOOD
+/sbin/iptables -F SYN-FLOOD
+/sbin/iptables -A SYN-FLOOD -m limit --limit 1/s --limit-burst 4 -j RETURN
+/sbin/iptables -A SYN-FLOOD -j DROP
+
+/sbin/iptables -A INPUT -p tcp --syn -j SYN-FLOOD
+/sbin/iptables -A INPUT -p tcp ! --syn -m state --state NEW -j DROP
+
+# watch out for fragments
+/sbin/iptables -A INPUT -f -j LOG --log-prefix "IPT FRAGMENTS: "
+/sbin/iptables -A INPUT -f -j DROP
+
+logger -t iptables Setting input/output rules
+# allow loopback in
+/sbin/iptables -A INPUT -i lo -j ACCEPT
+
+logger -t iptables Setting ICMP rules
+# allow certain inbound ICMP types (on *any* interface)
+/sbin/iptables -A INPUT -p icmp --icmp-type echo-reply -j ACCEPT
+/sbin/iptables -A INPUT -p icmp --icmp-type destination-unreachable -j ACCEPT
+/sbin/iptables -A INPUT -p icmp --icmp-type source-quench -j ACCEPT
+/sbin/iptables -A INPUT -p icmp --icmp-type echo-request -j ACCEPT
+/sbin/iptables -A INPUT -p icmp --icmp-type time-exceeded -j ACCEPT
+/sbin/iptables -A INPUT -p icmp --icmp-type parameter-problem -j ACCEPT
+
+logger -t iptables Setting TCP/UDP rules
+# opened ports
+/sbin/iptables -A INPUT -p tcp --sport ntp --dport ntp -j ACCEPT
+/sbin/iptables -A INPUT -p udp --sport ntp --dport ntp -j ACCEPT
+
+/sbin/iptables -A INPUT -p tcp --dport 53 -j ACCEPT
+/sbin/iptables -A INPUT -p udp --dport 53 -j ACCEPT
+
+logger -t iptables Finish up
+# push everything else to state table
+/sbin/iptables -A INPUT -j STATEFUL

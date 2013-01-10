@@ -11,8 +11,6 @@ NTP: http://ubuntuforums.org/showthread.php?t=862620
 
 
 Install:
-- /etc/modprobe.d/blacklist.conf
-blacklist ipv6
 - apt-get install dnsmasq
 - /etc/resolv.conf - 8.8.8.8 - 8.8.4.4
 - /etc/iproute2/rt_tables

@@ -40,7 +40,7 @@ logger -t iptables Creating user tables + rules
 /sbin/iptables -N STATEFUL
 /sbin/iptables -F STATEFUL
 /sbin/iptables -I STATEFUL -m state --state ESTABLISHED,RELATED -j ACCEPT
-/sbin/iptables -A STATEFUL -j DUMP
+/sbin/iptables -A STATEFUL -j DROP
 
 # SSH protection table
 #/sbin/iptables -N SSH
@@ -84,16 +84,23 @@ logger -t iptables Setting TCP/UDP rules
 /sbin/iptables -A INPUT -p tcp --source 10.10.0.0/24 --dport ssh -j ACCEPT
 /sbin/iptables -A INPUT -p tcp -i eth1 --dport ssh -j ACCEPT
 /sbin/iptables -A INPUT -p tcp -i eth2 --dport ssh -j ACCEPT
+/sbin/iptables -A INPUT -p tcp -i eth2:1 --dport ssh -j ACCEPT
+#/sbin/iptables -A INPUT -p tcp -i eth3 --dport ssh -j ACCEPT
 
 /sbin/iptables -A INPUT -p tcp --source 10.10.0.0/24 --dport http -j ACCEPT
 /sbin/iptables -A INPUT -p tcp -i eth1 --dport http -j ACCEPT
 /sbin/iptables -A INPUT -p tcp -i eth2 --dport http -j ACCEPT
+/sbin/iptables -A INPUT -p tcp -i eth2:1 --dport http -j ACCEPT
+#/sbin/iptables -A INPUT -p tcp -i eth3 --dport http -j ACCEPT
 
 # MUNIN
 /sbin/iptables -A INPUT -p tcp --source 10.10.1.251 --dport 4949 -j ACCEPT
 
 /sbin/iptables -A INPUT -p tcp --sport ntp --dport ntp -j ACCEPT
 /sbin/iptables -A INPUT -p udp --sport ntp --dport ntp -j ACCEPT
+
+/sbin/iptables -A INPUT -p tcp --dport 53 -j ACCEPT
+/sbin/iptables -A INPUT -p udp --dport 53 -j ACCEPT
 
 #logger -t classifying packets for shaping
 ##voip="192.168.3.3"
@@ -153,11 +160,14 @@ logger -t iptables Finish up
 # Alles was zurueck kommt und zu einer Verbindung gehoert erlauben
 /sbin/iptables -A FORWARD -i eth1 -m state --state ESTABLISHED,RELATED -j ACCEPT -m comment --comment "Bestehende Verbindungen von extern"
 /sbin/iptables -A FORWARD -i eth2 -m state --state ESTABLISHED,RELATED -j ACCEPT -m comment --comment "Bestehende Verbindungen von extern"
-
+#/sbin/iptables -A FORWARD -i eth2:1 -m state --state ESTABLISHED,RELATED -j ACCEPT -m comment --comment "Bestehende Verbindungen von extern"
+#/sbin/iptables -A FORWARD -i eth3 -m state --state ESTABLISHED,RELATED -j ACCEPT -m comment --comment "Bestehende Verbindungen von extern"
 
 logger -t iptables Turning on NAT
 # masquerade from internal network
 #/sbin/iptables -t nat -A POSTROUTING -s ${lannet} -o ${IFext} -j MASQUERADE
-iptables -t nat -A POSTROUTING -o eth1 -j SNAT --to-source 192.168.0.2
+iptables -t nat -A POSTROUTING -o eth1 -j SNAT --to-source 192.168.2.2
+#iptables -t nat -A POSTROUTING -o eth2:1 -j SNAT --to-source 192.168.2.3
 iptables -t nat -A POSTROUTING -o eth2 -j SNAT --to-source 192.168.1.2
+#iptables -t nat -A POSTROUTING -o eth3 -j SNAT --to-source 192.168.20.220
 

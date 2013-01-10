@@ -20,8 +20,9 @@ session_start();
 if(!empty($_SESSION["user_id"])) $logged_in = true;
 else $logged_in = false;
 
-function ping($ip){
-  exec("ping -n -q -c 1 -W 1 $ip > /dev/null 2>&1",$retarr,$retrc);
+function ping($ip, $eth = ""){
+  if(!empty($eth)) $eth = "-I $eth";
+  exec("ping -n -q -c 1 -W 1 $ip $eth > /dev/null 2>&1",$retarr,$retrc);
   return $retrc;
 }
 

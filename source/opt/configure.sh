@@ -3,7 +3,7 @@
 PFAD="/opt/mx_router"
 FW_TMPL="$PFAD/etc/firewall.template"
 
-LOCAL_NET=`ip route | grep eth0 | grep -v default | cut -d " " -f 1` # Sowas wie 10.10.0.0/20
+LOCAL_NET=`ip route | grep eth0 | grep link | grep -v default | cut -d " " -f 1` # Sowas wie 10.10.0.0/20
 LOCAL_IP=`ifconfig eth0 | grep 'inet ' | cut -d: -f2 | awk '{ print $1}'`
 
 echo "# Stopping mx_router .."

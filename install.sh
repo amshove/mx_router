@@ -105,7 +105,7 @@ sed -i s/--MYSQL_PW--/$MX_PW/ /var/www/config.inc.php
 echo "# Lege crontab-Eintrag an"
 echo "" >> /etc/crontab
 echo "# mx_router: Loeschen der zeitlich begrenzten Regeln" >> /etc/crontab
-echo "*/5 *   * * *   root    /usr/bin/php /var/www/cronjob/del_rules.php > /dev/null 2>&1" >> /etc/crontab
+echo "*/1 *   * * *   root    /usr/bin/php /var/www/cronjob/del_rules.php > /dev/null 2>&1" >> /etc/crontab
 
 echo "###################################"
 echo "# Richte Scripte ein"
@@ -116,6 +116,12 @@ mkdir /opt/mx_router
 cp -r source/opt/* /opt/mx_router
 chown root:root -R /opt/mx_router
 chmod 744 /opt/mx_router/*.sh
+
+echo "# Richte Status-motd ein"
+rm /etc/update-motd.d/*
+cp source/99-mx_router-motd /etc/update-motd.d/
+chown root:root /etc/update-motd.d/99-mx_router-motd
+chmod 755 /etc/update-motd.d/99-mx_router-motd
 
 echo "# Hinterlege MySQL-PW in /opt/mx_router/etc/mysql.passwd"
 echo $MX_PW > /opt/mx_router/etc/mysql.passwd

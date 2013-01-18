@@ -31,7 +31,7 @@ echo "# Richte /etc/resolv.conf ein"
 DNS1=""
 DNS2="8.8.8.8"
 DOMAIN=""
-read -p "DNS-Server fuer das lokale Netz: " DNS1
+read -p "Bitte den DNS-Server fuer das lokale Netz eingeben: " DNS1
 read -p "Domain fuer das lokale Netz: " DOMAIN
 
 mv /etc/resolv.conf /etc/resolv.conf.orig
@@ -75,7 +75,6 @@ echo "###################################"
 if [ ! -d "/var/www" ]; then
   echo "# Lege /var/www an"
   mkdir /var/www
-  chown root:root
   chmod 755 /var/www
 fi
 
@@ -84,12 +83,11 @@ if [ `ls -1 /var/www/ | wc -l` -ne 0 ]; then
   echo "# /var/www ist nicht leer - verschiebe es nach $DIR"
   mv /var/www $DIR
   mkdir /var/www
-  chown root:root
   chmod 755 /var/www
 fi
 
 echo "# Kopiere Webinterface nach /var/www"
-cp webinterface/* /var/www/
+cp -r webinterface/* /var/www/
 chown -R root:root /var/www/
 
 echo "# Trage MySQL-PW in config.inc.php ein"

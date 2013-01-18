@@ -4,7 +4,7 @@ PFAD="/opt/mx_router"
 FW_TMPL="$PFAD/etc/firewall.template"
 
 LOCAL_NET=`ip route | grep eth0 | grep -v default | cut -d " " -f 1` # Sowas wie 10.10.0.0/20
-LOCAL_IP=`ifconfig eth0 | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1}'`
+LOCAL_IP=`ifconfig eth0 | grep 'inet ' | cut -d: -f2 | awk '{ print $1}'`
 
 echo "# Stopping mx_router .."
 /etc/init.d/mx_router stop
@@ -26,9 +26,16 @@ I=1 # Counter fuer /etc/iproute2/rt_tables
 rm $PFAD/start.routing.tmp 2>/dev/null
 rm $PFAD/stop.routing.tmp 2>/dev/null
 rm $PFAD/start.firewall.tmp 2>/dev/null
+rm $PFAD/leitungen.inc.php.tmp 2>/dev/null
+
+if [ `ls -1 $PFAD/etc/leitungen.d/ | grep "\.conf$" | grep -v template.conf | wc -l` -lt 1 ]; then
+  echo "ERROR: Es wurden keine Leitungen definiert"
+  echo "Du musst erst in /opt/mx_router/etc/leitungen.d/ Konfigurationen anlegen"
+  exit 1
+fi
 
 # Leitungs-Configs durchgehen und Scripte erstellen
-for LEITUNG_CFG in `ls -1 $PFAD/etc/leitungen.d/ | grep -v README | grep -v template.conf`; do
+for LEITUNG_CFG in `ls -1 $PFAD/etc/leitungen.d/ | grep "\.conf$" | grep -v template.conf`; do
   echo "### Leitung: $LEITUNG_CFG ###"
   ACTIVE=""
   INTERFACE=""
@@ -62,18 +69,18 @@ for LEITUNG_CFG in `ls -1 $PFAD/etc/leitungen.d/ | grep -v README | grep -v temp
     echo "# Lasse $LEITUNG_CFG aus - ist deaktiviert."
     continue
   fi
-  if [ "$ACTIVE" == "" ] || [ "$INTERFACE" == "" ] || [ "$WINAME" == "" ] || [ "$NAME" == "" ] || [ "$SUBNET" == "" ] || [ "$IP" == "" ] || [ "$GW" == "" ] || [ "$PING_IP" == ""]; then
+  if [ "$ACTIVE" == "" ] || [ "$INTERFACE" == "" ] || [ "$WINAME" == "" ] || [ "$NAME" == "" ] || [ "$SUBNET" == "" ] || [ "$IP" == "" ] || [ "$GW" == "" ] || [ "$PING_IP" == "" ]; then
     echo "# Lasse $LEITUNG_CFG aus - es sind nicht alle Werte gesetzt."
     continue
   fi
   MASK=`echo $SUBNET | cut -d "/" -f 2`
+  WINAME=`echo $WINAME | sed s/^\"// | sed s/\"$//`
 
   # Routing-Table erstellen
   echo "$I $NAME" >> /etc/iproute2/rt_tables
-  let I=$I+1
 
   # Routing erstellen
-  echo "## Leitung $LEITUNG_CFG" >> $PFAD/start.routing.tmp
+  echo "### Leitung: $LEITUNG_CFG ###" >> $PFAD/start.routing.tmp
   echo "# Interface einstellen" >> $PFAD/start.routing.tmp
   echo "ip addr flush $INTERFACE" >> $PFAD/start.routing.tmp
   echo "ip route flush table $NAME" >> $PFAD/start.routing.tmp
@@ -82,22 +89,22 @@ for LEITUNG_CFG in `ls -1 $PFAD/etc/leitungen.d/ | grep -v README | grep -v temp
   echo "ip link set $INTERFACE up" >> $PFAD/start.routing.tmp
   echo "" >> $PFAD/start.routing.tmp
   echo "# Routing-Tabelle '$NAME' einstellen" >> $PFAD/start.routing.tmp
-  echo "ip route add $LOCAL_NET src $LOCAL_IP dev eth0 table $NAME"
-  echo "ip route add $SUBNET src $IP dev $INTERFACE table $NAME"
-  echo "ip route add default via $GW src $IP dev $INTERFACE table $NAME"
+  echo "ip route add $LOCAL_NET src $LOCAL_IP dev eth0 table $NAME" >> $PFAD/start.routing.tmp
+  echo "ip route add $SUBNET src $IP dev $INTERFACE table $NAME" >> $PFAD/start.routing.tmp
+  echo "ip route add default via $GW src $IP dev $INTERFACE table $NAME" >> $PFAD/start.routing.tmp
   echo "" >> $PFAD/start.routing.tmp
   echo "# PING_IP in default-routing-Tabelle eintragen" >> $PFAD/start.routing.tmp
-  echo "ip route add $PING_IP via $GW dev $INTERFACE src $IP"
+  echo "ip route add $PING_IP via $GW dev $INTERFACE src $IP" >> $PFAD/start.routing.tmp
   echo "" >> $PFAD/start.routing.tmp
   echo "" >> $PFAD/start.routing.tmp
 
-  echo "## Leitung $LEITUNG_CFG" >> $PFAD/stop.routing.tmp
+  echo "### Leitung: $LEITUNG_CFG ###" >> $PFAD/stop.routing.tmp
   echo "ip addr flush $INTERFACE" >> $PFAD/stop.routing.tmp
   echo "ip route flush table $NAME" >> $PFAD/stop.routing.tmp
   echo "ip link set $INTERFACE down" >> $PFAD/stop.routing.tmp
 
   # Firewall ersstellen
-  echo "## Leitung $LEITUNG_CFG" >> $PFAD/start.firewall.tmp
+  echo "### Leitung: $LEITUNG_CFG ###" >> $PFAD/start.firewall.tmp
   echo "# Alles was zurueck kommt und zu einer Verbindung gehoert erlauben" >> $PFAD/start.firewall.tmp
   echo "/sbin/iptables -A FORWARD -i $INTERFACE -m state --state ESTABLISHED,RELATED -j ACCEPT -m comment --comment \"Bestehende Verbindungen von extern - $INTERFACE\"" >> $PFAD/start.firewall.tmp
   echo "" >> $PFAD/start.firewall.tmp
@@ -105,6 +112,17 @@ for LEITUNG_CFG in `ls -1 $PFAD/etc/leitungen.d/ | grep -v README | grep -v temp
   echo "iptables -t nat -A POSTROUTING -o $INTERFACE -j SNAT --to-source $IP" >> $PFAD/start.firewall.tmp
   echo "" >> $PFAD/start.firewall.tmp
   echo "" >> $PFAD/start.firewall.tmp
+
+  # Webinterface Einstellung
+  #echo "  $(( $I-1 )) => array(" >> $PFAD/leitungen.inc.php.tmp
+  echo "  array(" >> $PFAD/leitungen.inc.php.tmp
+  echo "    'name' => '$WINAME'," >> $PFAD/leitungen.inc.php.tmp
+  echo "    'ip' => '$PING_IP'," >> $PFAD/leitungen.inc.php.tmp
+  echo "    'eth' => '$INTERFACE'," >> $PFAD/leitungen.inc.php.tmp
+  echo "    'table' => 'kamp'" >> $PFAD/leitungen.inc.php.tmp
+  echo "  )," >> $PFAD/leitungen.inc.php.tmp
+
+  let I=$I+1
 done
 
 # Script-Header erstellen
@@ -142,7 +160,10 @@ echo "# FIREWALL" >> $PFAD/start.sh
 echo "###################" >> $PFAD/start.sh
 echo "" >> $PFAD/start.sh
 cat $FW_TMPL >> $PFAD/start.sh
+echo "" >> $PFAD/start.sh
+echo "" >> $PFAD/start.sh
 cat $PFAD/start.firewall.tmp >> $PFAD/start.sh
+echo "### additional_rules.conf ###" >> $PFAD/start.sh
 cat $PFAD/etc/additional_rules.conf >> $PFAD/start.sh
 echo "" >> $PFAD/start.sh
 echo "" >> $PFAD/start.sh
@@ -180,11 +201,33 @@ echo "/sbin/iptables -F -t nat" >> $PFAD/stop.sh
 echo "/sbin/iptables -X" >> $PFAD/stop.sh
 echo "/sbin/iptables -Z" >> $PFAD/stop.sh
 
+# leitungen.inc.php erstellen
+echo "<?php" > /var/www/leitungen.inc.php
+echo "############################################################" >> /var/www/leitungen.inc.php
+echo "# Router Webinterface                                      #" >> /var/www/leitungen.inc.php
+echo "# Copyright (C) 2010 Torsten Amshove <torsten@amshove.net> #" >> /var/www/leitungen.inc.php
+echo "############################################################" >> /var/www/leitungen.inc.php
+echo "# Dieses Script wird automatisch durch configure.sh erstellt" >> /var/www/leitungen.inc.php
+echo "# Manuelle aenderungen werden ueberschrieben!" >> /var/www/leitungen.inc.php
+echo "############################################################" >> /var/www/leitungen.inc.php
+echo "\$leitungen = array(" >> /var/www/leitungen.inc.php
+cat $PFAD/leitungen.inc.php.tmp >> /var/www/leitungen.inc.php
+echo ");" >> /var/www/leitungen.inc.php
+echo "?>" >> /var/www/leitungen.inc.php
+
 rm $PFAD/start.routing.tmp
 rm $PFAD/stop.routing.tmp
 rm $PFAD/start.firewall.tmp
+rm $PFAD/leitungen.inc.php.tmp
 
 chown root:root $PFAD/start.sh
 chmod 744 $PFAD/start.sh
 chown root:root $PFAD/stop.sh
 chmod 744 $PFAD/stop.sh
+
+echo "#############################"
+echo "# Scripte konfiguriert"
+echo "# Du kannst den Router jetzt starten"
+echo "#   /etc/init.d/mx_router start"
+echo "#############################"
+

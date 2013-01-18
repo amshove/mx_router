@@ -4,6 +4,15 @@ echo "###################################"
 echo "# Bereite den Server als Router vor"
 echo "###################################"
 
+grep dhcp /etc/network/interfaces  > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+  echo "# In /etc/network/interfaces steht noch ein Interface auf dhcp ..."
+  echo "# eth0 muss fest auf die LAN-IP eingestellt sein"
+  echo "# alle anderen Interfaces duerfen keine Konfiguration haben"
+  echo "# Breche ab .. bitte erst /etc/network/interfaces bearbeiten"
+  exit 1
+fi
+
 echo "# Deinstalliere resolvconf & appamor (mit funktioniert das ip_forwarding nicht)"
 apt-get -y remove apparmor apparmor-utils resolvconf
 
@@ -109,7 +118,7 @@ chown root:root -R /opt/mx_router
 chmod 744 /opt/mx_router/*.sh
 
 echo "# Hinterlege MySQL-PW in /opt/mx_router/etc/mysql.passwd"
-echo $MY_PW > /opt/mx_router/etc/mysql.passwd
+echo $MX_PW > /opt/mx_router/etc/mysql.passwd
 chown root:root /opt/mx_router/etc/mysql.passwd
 chmod 600 /opt/mx_router/etc/mysql.passwd
 

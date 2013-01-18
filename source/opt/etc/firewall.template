@@ -16,12 +16,6 @@ logger -t iptables Flushing tables
 /sbin/iptables -Z
 
 logger -t iptables Creating user tables + rules
-# Stateful table
-/sbin/iptables -N STATEFUL
-/sbin/iptables -F STATEFUL
-/sbin/iptables -I STATEFUL -m state --state ESTABLISHED,RELATED -j ACCEPT
-/sbin/iptables -A STATEFUL -j DROP
-
 # SYN protection table
 /sbin/iptables -N SYN-FLOOD
 /sbin/iptables -F SYN-FLOOD
@@ -58,4 +52,4 @@ logger -t iptables Setting TCP/UDP rules
 
 logger -t iptables Finish up
 # push everything else to state table
-/sbin/iptables -A INPUT -j STATEFUL
+/sbin/iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT

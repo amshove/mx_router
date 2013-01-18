@@ -7,9 +7,9 @@ require("leitungen.inc.php");
 
 // MySQL-Settings
 $mysql_host = "localhost";
-$mysql_user = "router";
+$mysql_user = "mx_router";
 $mysql_pw = "--MYSQL_PW--";
-$mysql_db = "router";
+$mysql_db = "mx_router";
 
 // Settings
 # Auf dem Server muss ein sudo eingerichtet werden:

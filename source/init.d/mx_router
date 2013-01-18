@@ -14,7 +14,7 @@
 set -e
 
 START_SCRIPT="/opt/mx_router/start.sh"
-STOP_SCRIPT="/opt/mx_router/start.sh"
+STOP_SCRIPT="/opt/mx_router/stop.sh"
 
 test -x $START_SCRIPT || exit 1
 test -x $STOP_SCRIPT || exit 1

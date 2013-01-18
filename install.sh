@@ -112,6 +112,8 @@ chmod 744 /opt/mx_router/*.sh
 
 echo "# Hinterlege MySQL-PW in /opt/mx_router/etc/mysql.passwd"
 echo $MY_PW > /opt/mx_router/etc/mysql.passwd
+chown root:root /opt/mx_router/etc/mysql.passwd
+chmod 600 /opt/mx_router/etc/mysql.passwd
 
 echo "# Lege init-Script /etc/init.d/mx_router an"
 cp source/init.d/mx_router /etc/init.d/mx_router
@@ -125,11 +127,11 @@ echo "###################################"
 echo "# Installation durchgefuehrt      #"
 echo "###################################"
 echo "# Die Internet-Leitungen muessen in"
-echo "#   /opt/mx_router/leitungen.conf"
+echo "#   /opt/mx_router/etc/leitungen.d/"
 echo "# eingerichtet werden."
 echo "#"
 echo "# Danach werden die Aenderungen aktiv mit"
-echo "#   /etc/init.d/mx_router restart"
+echo "#   /opt/mx_router/etc/configure.sh"
 echo "#"
 echo "# Danach kann die Webseite benutzt werden"
 echo "#   User: admin   PW: mx_router"
@@ -146,4 +148,4 @@ echo "###################################"
 
 read
 
-#reboot
+reboot

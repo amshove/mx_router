@@ -2,16 +2,12 @@
 
 ### BEGIN INIT INFO
 # Provides:		mx_router
-# Required-Start:	$remote_fs $syslog
-# Required-Stop:	$remote_fs $syslog
+# Required-Start:	$remote_fs $syslog $mysql
+# Required-Stop:	$remote_fs $syslog $mysql
 # Default-Start:	2 3 4 5
 # Default-Stop:		
 # Short-Description:	Startet die initialen Scripte des mx_router
 ### END INIT INFO
-
-# Version: 1
-
-set -e
 
 START_SCRIPT="/opt/mx_router/start.sh"
 STOP_SCRIPT="/opt/mx_router/stop.sh"
@@ -23,6 +19,12 @@ test -x $STOP_SCRIPT || exit 1
 
 case "$1" in
   start)
+        ps -A | grep mysql > /dev/null 2>&1
+        if [ $? -ne 0 ]; then
+          echo "MySQL lauft noch nicht .. Warte 10 Sekunden .."
+          service mysql start
+          sleep 10
+        fi
 	log_daemon_msg "Starting mx_router $START_SCRIPT" "mx_router"
         $START_SCRIPT
         if [ $? -eq 0 ]; then

@@ -1,5 +1,13 @@
 #!/bin/bash
 
+echo "# ACHTUNG: Der Router wird gestoppt"
+read -p "Soll der Router nach dem Konfigurieren wieder gestartet werden? (y/n) " START
+
+if [ "$START" != "y" ] && [ "$START" != "n" ]; then
+  echo "Unbekannte Eingabe - breche ab .."
+  exit 1
+fi
+
 PFAD="/opt/mx_router"
 FW_TMPL="$PFAD/etc/firewall.template"
 
@@ -33,6 +41,10 @@ if [ `ls -1 $PFAD/etc/leitungen.d/ | grep "\.conf$" | grep -v template.conf | wc
   echo "Du musst erst in /opt/mx_router/etc/leitungen.d/ Konfigurationen anlegen"
   exit 1
 fi
+
+DEFAULT_GW="" # Wird vom letzten Element in der Schleife gefuellt
+DEFAULT_GW_IF="" # Interface zum Default-GW
+DEFAULT_GW_IP="" # Src-IP zum Default-GW
 
 # Leitungs-Configs durchgehen und Scripte erstellen
 for LEITUNG_CFG in `ls -1 $PFAD/etc/leitungen.d/ | grep "\.conf$" | grep -v template.conf`; do
@@ -73,6 +85,9 @@ for LEITUNG_CFG in `ls -1 $PFAD/etc/leitungen.d/ | grep "\.conf$" | grep -v temp
     echo "# Lasse $LEITUNG_CFG aus - es sind nicht alle Werte gesetzt."
     continue
   fi
+  DEFAULT_GW=$GW
+  DEFAULT_GW_IF=$INTERFACE
+  DEFAULT_GW_IP=$IP
   MASK=`echo $SUBNET | cut -d "/" -f 2`
   WINAME=`echo $WINAME | sed s/^\"// | sed s/\"$//`
 
@@ -93,6 +108,9 @@ for LEITUNG_CFG in `ls -1 $PFAD/etc/leitungen.d/ | grep "\.conf$" | grep -v temp
   echo "ip route add $SUBNET src $IP dev $INTERFACE table $NAME" >> $PFAD/start.routing.tmp
   echo "ip route add default via $GW src $IP dev $INTERFACE table $NAME" >> $PFAD/start.routing.tmp
   echo "" >> $PFAD/start.routing.tmp
+  echo "# FWmark-Regel setzen" >> $PFAD/start.routing.tmp
+  echo "ip rule add fwmark $I table $NAME" >> $PFAD/start.routing.tmp
+  echo "" >> $PFAD/start.routing.tmp
   echo "# PING_IP in default-routing-Tabelle eintragen" >> $PFAD/start.routing.tmp
   echo "ip route add $PING_IP via $GW dev $INTERFACE src $IP" >> $PFAD/start.routing.tmp
   echo "" >> $PFAD/start.routing.tmp
@@ -109,7 +127,8 @@ for LEITUNG_CFG in `ls -1 $PFAD/etc/leitungen.d/ | grep "\.conf$" | grep -v temp
   echo "/sbin/iptables -A FORWARD -i $INTERFACE -m state --state ESTABLISHED,RELATED -j ACCEPT -m comment --comment \"Bestehende Verbindungen von extern - $INTERFACE\"" >> $PFAD/start.firewall.tmp
   echo "" >> $PFAD/start.firewall.tmp
   echo "# NAT einstellen" >> $PFAD/start.firewall.tmp
-  echo "iptables -t nat -A POSTROUTING -o $INTERFACE -j SNAT --to-source $IP" >> $PFAD/start.firewall.tmp
+#  echo "iptables -t nat -A POSTROUTING -o $INTERFACE -j SNAT --to-source $IP" >> $PFAD/start.firewall.tmp
+  echo "iptables -t nat -A POSTROUTING -m mark --mark $I -j SNAT --to-source $IP" >> $PFAD/start.firewall.tmp
   echo "" >> $PFAD/start.firewall.tmp
   echo "" >> $PFAD/start.firewall.tmp
 
@@ -135,16 +154,18 @@ echo "# Dieses Script wird automatisch durch configure.sh erstellt" >> $PFAD/sta
 echo "# Manuelle aenderungen werden ueberschrieben!" >> $PFAD/start.sh
 echo "############################################################" >> $PFAD/start.sh
 echo "" >> $PFAD/start.sh
-echo "MYSQL_USER=\"mx_router\"" >> $PFAD/start.sh
-echo "MYSQL_PW=\`cat $PFAD/etc/mysql.passwd\`" >> $PFAD/start.sh
-echo "MYSQL_DB=\"mx_router\"" >> $PFAD/start.sh
-echo "" >> $PFAD/start.sh
-echo "# Alte Eintraege in der DB achivieren" >> $PFAD/start.sh
-echo "echo \"UPDATE history SET active = 0, del_user = 'start_script', del_date = '\`date +%s\`' WHERE active = 0\" | mysql -u \$MYSQL_USER --password=\$MYSQL_PW \$MYSQL_DB" >> $PFAD/start.sh
-echo "" >> $PFAD/start.sh
 cp $PFAD/start.sh $PFAD/stop.sh # Bis hier hin sind beide gleich
 
 # start.sh erstellen
+#echo "###################" >> $PFAD/start.sh
+#echo "# ipset-LISTEN" >> $PFAD/start.sh
+#echo "###################" >> $PFAD/start.sh
+#echo "ipset -! create web_access_ip hash:ip timeout 0" >> $PFAD/start.sh
+#echo "ipset -! create web_access_net hash:net timeout 0" >> $PFAD/start.sh
+#echo "ipset -! create web_access list:set" >> $PFAD/start.sh
+#echo "ipset -! add web_access web_access_ip" >> $PFAD/start.sh
+#echo "ipset -! add web_access web_access_net" >> $PFAD/start.sh
+#echo "" >> $PFAD/start.sh
 echo "###################" >> $PFAD/start.sh
 echo "# ROUTING" >> $PFAD/start.sh
 echo "###################" >> $PFAD/start.sh
@@ -152,7 +173,7 @@ echo "" >> $PFAD/start.sh
 cat $PFAD/start.routing.tmp >> $PFAD/start.sh
 echo "" >> $PFAD/start.sh
 echo "# Default-Route in Default-Tabelle, damit der Server auch ins Netz kommt" >> $PFAD/start.sh
-echo "ip route add default via $GW dev $INTERFACE src $IP" >> $PFAD/start.sh
+echo "ip route add default via $DEFAULT_GW dev $DEFAULT_GW_IF src $DEFAULT_GW_IP" >> $PFAD/start.sh
 echo "" >> $PFAD/start.sh
 echo "" >> $PFAD/start.sh
 echo "###################" >> $PFAD/start.sh
@@ -167,8 +188,25 @@ echo "### additional_rules.conf ###" >> $PFAD/start.sh
 cat $PFAD/etc/additional_rules.conf >> $PFAD/start.sh
 echo "" >> $PFAD/start.sh
 echo "" >> $PFAD/start.sh
+echo "MYSQL_USER=\"mx_router\"" >> $PFAD/start.sh
+echo "MYSQL_PW=\`cat $PFAD/etc/mysql.passwd\`" >> $PFAD/start.sh
+echo "MYSQL_DB=\"mx_router\"" >> $PFAD/start.sh
+echo "" >> $PFAD/start.sh
+echo "# Alte Eintraege aus der DB wiederherstellen" >> $PFAD/start.sh
+echo "for IP in \`echo \"SELECT ip FROM history WHERE active = 1\" | mysql -u mx_router --password=\$MYSQL_PW mx_router | tail -n +2\`; do" >> $PFAD/start.sh
+echo "  echo \"Aktiviere Regel fuer \$IP - stand noch in der DB ..\"" >> $PFAD/start.sh
+echo "  /sbin/iptables -I FORWARD --source \$IP -j ACCEPT" >> $PFAD/start.sh
+echo "done" >> $PFAD/start.sh
+echo "" >> $PFAD/start.sh
+echo "# Default-Leitung waehlen und MARK auf die komplette CONNECTION setzen" >> $PFAD/start.sh
+echo "/sbin/iptables -t mangle -A PREROUTING -j CONNMARK --restore-mark" >> $PFAD/start.sh
+echo "/sbin/iptables -t mangle -A PREROUTING -s $LOCAL_NET -j MARK --set-mark 1" >> $PFAD/start.sh
+echo "/sbin/iptables -t mangle -A PREROUTING -j CONNMARK --save-mark" >> $PFAD/start.sh
+echo "" >> $PFAD/start.sh
 echo "###################" >> $PFAD/start.sh
 echo "# Forwarding aktivieren" >> $PFAD/start.sh
+echo "###################" >> $PFAD/start.sh
+echo "echo 2 > /proc/sys/net/ipv4/conf/all/rp_filter # Source Routing = loose (alles bekannten Nezte sind erlaubt)" >> $PFAD/start.sh
 echo "sysctl -w net.ipv4.ip_forward=1" >> $PFAD/start.sh
 
 # stop.sh erstellen
@@ -177,12 +215,22 @@ echo "# Forwarding deaktivieren" >> $PFAD/stop.sh
 echo "sysctl -w net.ipv4.ip_forward=0" >> $PFAD/stop.sh
 echo "" >> $PFAD/stop.sh
 echo "" >> $PFAD/stop.sh
+#echo "###################" >> $PFAD/start.sh
+#echo "# ipset-LISTEN" >> $PFAD/start.sh
+#echo "###################" >> $PFAD/start.sh
+#echo "ipset flush web_access_ip" >> $PFAD/stop.sh
+#echo "ipset flush web_access_net" >> $PFAD/stop.sh
+#echo "" >> $PFAD/stop.sh
 echo "###################" >> $PFAD/stop.sh
 echo "# ROUTING" >> $PFAD/stop.sh
 echo "###################" >> $PFAD/stop.sh
 echo "" >> $PFAD/stop.sh
 cat $PFAD/stop.routing.tmp >> $PFAD/stop.sh
 echo "" >> $PFAD/stop.sh
+echo "# IP-Rules loeschen" >> $PFAD/stop.sh
+echo "ip rule flush" >> $PFAD/stop.sh
+echo "ip rule add table main pref 32766" >> $PFAD/stop.sh
+echo "ip rule add table default pref 32767" >> $PFAD/stop.sh
 echo "" >> $PFAD/stop.sh
 echo "###################" >> $PFAD/stop.sh
 echo "# FIREWALL" >> $PFAD/stop.sh
@@ -231,3 +279,8 @@ echo "# Du kannst den Router jetzt starten"
 echo "#   /etc/init.d/mx_router start"
 echo "#############################"
 
+if [ "$START" == "y" ]; then
+  echo ""
+  echo "# Starte mx_router .."
+  /etc/init.d/mx_router start
+fi

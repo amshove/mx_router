@@ -14,7 +14,9 @@ if($_SESSION["ad_level"] >= 1){
     echo "  <td class='$class' width='70' align='center'>".$leitung["name"]."</td>";
   }
   echo "  </tr>";
-  echo "</table><br><br>";
+  echo "</table>";
+  if(exec("cat /proc/sys/net/ipv4/ip_forward") == 0) echo "<br><h2>Der Router ist gestoppt - bitte erst mit \"/etc/init.d/mx_router start\" starten!</h2>";
+  echo "<br><br>";
 
 
 
@@ -24,7 +26,7 @@ if($_SESSION["ad_level"] >= 1){
     }elseif(!preg_match("/^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$/",$_POST["ip"]) && !preg_match("/^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\/[0-9]{1,2}$/",$_POST["ip"])){
       echo "<div class='meldung_error'>Keine g&uuml;ltige IP-Adresse angegeben.</div><br>";
     }elseif(mysql_num_rows(mysql_query("SELECT id FROM history WHERE ip = '".$_POST["ip"]."' AND active = 1")) > 0){
-      echo "<div class='meldung_error'>Es gibt bereits eine Regel f&uuml;r dir IP.</div><br>";
+      echo "<div class='meldung_error'>Es gibt bereits eine Regel f&uuml;r die IP.</div><br>";
     }else{
       if(iptables_add($_POST["ip"])){
         $now = time();
@@ -32,7 +34,7 @@ if($_SESSION["ad_level"] >= 1){
         else{
           $end_date = $now + ($_POST["end_date"]*60);
         }
-        mysql_query("INSERT INTO history SET user_id = '0', ip = '".$_POST["ip"]."', add_user = '".$_SESSION["user_name"]."', add_date = '".$now."', end_date = '".$end_date."', active = 1, reason = '".mysql_real_escape_string($_POST["reason"])."'");
+        mysql_query("INSERT INTO history SET ip = '".$_POST["ip"]."', add_user = '".$_SESSION["user_name"]."', add_date = '".$now."', end_date = '".$end_date."', active = 1, reason = '".mysql_real_escape_string($_POST["reason"])."'");
         echo "<div class='meldung_ok'>Regel erfolgreich erstellt</div><br>";
       }else{
         echo "<div class='meldung_error'>Regel konnte nicht angelegt werden!</div><br>";
@@ -40,16 +42,23 @@ if($_SESSION["ad_level"] >= 1){
     }
   }
 
-  if($_GET["cmd"] == "del" && !empty($_GET["id"]) && is_numeric($_GET["id"])){
-    $id = mysql_real_escape_string($_GET["id"]);
-    $ip = @mysql_result(mysql_query("SELECT ip FROM history WHERE id = '".$id."' LIMIT 1"),0,"ip");
-    if(!empty($ip) && iptables_del($ip)){
-      mysql_query("UPDATE history SET active = 0, del_user = '".$_SESSION["user_name"]."', del_date = '".time()."' WHERE id = '".$id."'");
-      echo "<div class='meldung_ok'>Regel erfolgreich gel&ouml;scht.</div><br>";
-    }else{
-      echo "<div class='meldung_error'>Regel konnte nicht gel&ouml;scht werden!</div><br>";
+  if($_GET["cmd"] == "del"){
+    $ids = array();
+    if(!empty($_GET["id"]) && is_numeric($_GET["id"])) $ids[] = $_GET["id"];
+    elseif(is_array($_POST["id"])) $ids = $_POST["id"];
+
+    if(count($ids) > 0){
+      foreach($ids as $id){
+        $id = mysql_real_escape_string($id);
+        $ip = @mysql_result(mysql_query("SELECT ip FROM history WHERE id = '".$id."' LIMIT 1"),0,"ip");
+        if(!empty($ip) && iptables_del($ip,$_SESSION["user_name"],$id)){
+          echo "<div class='meldung_ok'>Regel erfolgreich gel&ouml;scht.</div><br>";
+        }else{
+          echo "<div class='meldung_error'>Regel konnte nicht gel&ouml;scht werden!</div><br>";
+        }
+      }
     }
-  }elseif($_GET["cmd"] == "ports"){
+  }elseif($_GET["cmd"] == "ports" && $_SESSION["ad_level"] >= 4){
     $status = false;
     if($_GET["do"] == "on"){
       $status = ports_add($_GET["ports"]);
@@ -139,7 +148,7 @@ if($_SESSION["ad_level"] >= 1){
   echo "    <th width='100'>Traffic</th>";
   echo "  </tr>";
   foreach($aliases as $k => $v){
-    if($iptables_traffic[$k]){
+    if(in_array($k,$iptables_ips)){
       echo "<tr>";
       echo "  <td>".$k." (".$v.")</td>";
       echo "  <td align='center'>".$iptables_traffic[$k]."</td>";
@@ -152,11 +161,24 @@ if($_SESSION["ad_level"] >= 1){
   echo "</table>";
 
 
+  echo "<script>";
+  echo "  function select_all(){";
+  echo "    var status = document.getElementById('chk_all').checked;";
+  echo "    var boxes = document.getElementsByTagName('input');";
+  echo "    for each (var box in boxes){";
+  echo "      if(box.name == 'id[]'){";
+  echo "        box.checked = status;";
+  echo "      }";
+  echo "    }";
+  echo "  }";
+  echo "</script>";
+  echo "<form action='index.php?cmd=del' method='POST' style='display: inline;'>";
   echo "<h3>Aktuelle Freigaben</h3>";
   echo "<table class='hover_row'>";
   echo "  <tr>";
+  echo "    <th width='10'><input type='checkbox' id='chk_all' onClick='select_all();' style='margin: 0px;'></th>";
   echo "    <th width='100'>IP</th>";
-  echo "    <th width='80'>Sitzplatz</th>";
+  echo "    <th width='130'>DNS</th>";
   echo "    <th width='80'>Traffic</th>";
   echo "    <th width='200'>Grund</th>";
   echo "    <th width='130'>Angelegt von</th>";
@@ -164,15 +186,18 @@ if($_SESSION["ad_level"] >= 1){
   echo "    <th width='30'>&nbsp;</th>";
   echo "  </tr>";
 
+  $error = false;
   $i = 0;
   $query = mysql_query("SELECT * FROM history WHERE active = 1 ORDER BY INET_ATON(ip)");
   while($row = mysql_fetch_assoc($query)){ 
+    $dns = gethostbyaddr($row["ip"]);
     echo "<tr";
     if(($i % 2) > 0) echo " class='odd_row'";
-    if(!in_array($row["ip"],$iptables_ips)) echo " style='background-color: #CC9999;'";
+    if(!in_array($row["ip"],$iptables_ips)){ echo " style='background-color: #CC9999;'"; $error = true; }
     echo ">";
+    echo "  <td valign='top'><input type='checkbox' name='id[]' value='".$row["id"]."' style='margin: 0px;'></td>";
     echo "  <td valign='top'>".$row["ip"]."</td>";
-    echo "  <td valign='top' align='center'>".str_replace(array("Sitz-",".lan"),"",gethostbyaddr($row["ip"]))."</td>";
+    echo "  <td valign='top' align='center'>".($dns == $row["ip"] ? "" : $dns)."</td>";
     echo "  <td valign='top' align='center'>".$iptables_traffic[$row["ip"]]."</td>";
     echo "  <td valign='top'>".nl2br($row["reason"])."</td>";
     echo "  <td valign='top'>".$row["add_user"]."</td>";
@@ -185,5 +210,8 @@ if($_SESSION["ad_level"] >= 1){
     $i++;
   }
   echo "</table>";
+  if($error) echo "Rot hinterlegte Zeilen sind Regeln, die ohne Wissen des Webinterfaces gel&ouml;scht wurden. Diese m&uuml;ssen von Hand entfernt und neu angelegt werden.<br>";
+  echo "<input type='submit' name='del_more' value='Ausgew&auml;hlte l&ouml;schen' onClick='return confirm(\"Ausgew&auml;hlte Freigaben wirklich l&ouml;schen?\");'>";
+  echo "</form>";
 }
 ?>

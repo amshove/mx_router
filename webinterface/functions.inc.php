@@ -37,9 +37,9 @@ function iptables_add($ip){
   return true;
 }
 
-function iptables_del($ip){
+function iptables_del($ip,$del_user,$id){
   global $iptables_cmd;
-  $cmd = $iptables_cmd." -L FORWARD -n --line-numbers | grep ACCEPT";
+  $cmd = $iptables_cmd." -L FORWARD -n --line-numbers -v | grep ACCEPT";
   exec($cmd,$retarr,$retrc);
   if($retrc != 0){
     if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
@@ -47,7 +47,7 @@ function iptables_del($ip){
   }
   foreach($retarr as $line){
     $fields = preg_split("/\s/",$line, -1, PREG_SPLIT_NO_EMPTY);
-    if($fields[4] == $ip){
+    if($fields[8] == $ip){
       $num = $fields[0];
       if(is_numeric($num)){
         $cmd = $iptables_cmd." -D FORWARD ".$num;
@@ -56,6 +56,9 @@ function iptables_del($ip){
         if($retrc != 0){
           if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
           return false;
+        }else{
+          mysql_query("UPDATE history SET active = 0, del_user = '".$del_user."', del_date = '".time()."', traffic = '".$fields[2]."' WHERE id = '".$id."'");
+          return true;
         }
       }
     }
@@ -219,5 +222,16 @@ function rule_list(){
     }
   }
   return $array;
+}
+
+function cidr_match($ip, $range){ // http://stackoverflow.com/questions/594112/matching-an-ip-to-a-cidr-mask-in-php5
+  if(!preg_match("/\//",$range)) $range .= "/32";
+echo "#".$range."#";
+  list ($subnet, $bits) = explode('/', $range);
+  $ip = ip2long($ip);
+  $subnet = ip2long($subnet);
+  $mask = -1 << (32 - $bits);
+  $subnet &= $mask; # nb: in case the supplied subnet wasn't correctly aligned
+  return ($ip & $mask) == $subnet;
 }
 ?>

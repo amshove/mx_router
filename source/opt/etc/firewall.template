@@ -53,3 +53,7 @@ logger -t iptables Setting TCP/UDP rules
 logger -t iptables Finish up
 # push everything else to state table
 /sbin/iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+
+# IP-Liste web_access erlauben
+#/sbin/iptables -A FORWARD -m set --match-set web_access src -j ACCEPT
+#/sbin/iptables -A FORWARD -m set --match-set web_access dst -m state --state ESTABLISHED,RELATED -j ACCEPT

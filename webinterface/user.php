@@ -109,5 +109,11 @@ while($row = mysql_fetch_assoc($query)){
 }
 
 echo "</table>";
+
+echo "<br><br>";
+echo "<h3>Rechte</h3>";
+echo " - <u>User:</u> User k&ouml;nnen Internet freischalten und Regeln entfernen.<br>";
+echo " - <u>Admin:</u> Admins k&ouml;nnen zus&auml;tzlich die globalen Freischaltungen steuern.<br>";
+echo " - <u>Superadmin:</u> Superadmins k&ouml;nnen zus&auml;tzlich die User verwalten.<br>";
 }
 ?>

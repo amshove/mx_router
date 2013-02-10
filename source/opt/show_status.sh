@@ -21,11 +21,24 @@ echo ""
 NET=`ip route | grep eth0 | grep link | grep -v default | cut -d " " -f 1` # Sowas wie 10.10.0.0/20
 IP=`ifconfig eth0 | grep 'inet ' | cut -d: -f2 | awk '{ print $1}'`
 GW=`ip route | grep default | cut -d " " -f 3`
-
+#echo -e "                     \033[4mLokales Netz\033[0m"
+#echo ""
+#echo -e "\033[5G | IP \033[23G | NET \033[44G | GATEWAY"
+#echo "--------------------------------------------------------------"
 echo -e "\033[5G | IP \033[23G | NET \033[44G | GATEWAY \033[62G | TABLE"
 echo "-----------------------------------------------------------------------------"
 echo -e "\033[35meth0\033[5G | $IP \033[23G | $NET \033[44G | $GW \033[62G | \033[0m"
-
+#echo ""
+#for D in `grep nameserver /etc/resolv.conf | cut -d " " -f 2`; do
+#  echo "DNS: $D"
+#done
+#echo ""
+#
+#echo ""
+#echo -e "                     \033[4mInternet-Leitungen\033[0m"
+#echo ""
+#echo -e "\033[5G | IP \033[23G | NET \033[44G | GATEWAY \033[62G | TABLE"
+#echo "-----------------------------------------------------------------------------"
 for ETH in `ifconfig | grep ^eth | grep -v eth0 | cut -d " " -f 1`; do
   NET=`ip route | grep $ETH | grep link | grep -v default | cut -d " " -f 1` # Sowas wie 10.10.0.0/20
   IP=`ifconfig $ETH | grep 'inet ' | cut -d: -f2 | awk '{ print $1}'`
@@ -50,7 +63,6 @@ for ETH in `ifconfig | grep ^eth | grep -v eth0 | cut -d " " -f 1`; do
 
   echo -e "$PING$ETH \033[5G | $IP \033[23G | $NET \033[44G | $GW \033[62G | $RT \033[0m"
 done
-
 echo ""
 for D in `grep nameserver /etc/resolv.conf | cut -d " " -f 2`; do
   echo "DNS: $D"

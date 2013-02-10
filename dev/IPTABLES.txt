@@ -1,0 +1,33 @@
+                          <NETWORK>
+                              |
+                           mangle
+                          PREROUTING
+                              |
+                             nat
+                          PREROUTING
+                              |
+      mangle ________ <routing decision> ________
+      INPUT                                      |
+        |                                        |
+      filter                                   mangle
+      INPUT                                    FORWARD
+        |                                        |
+  <local process>                              filter
+        |                                      FORWARD
+<routing decision>                               |
+        |                                        |
+      mangle                                     |
+      OUTPUT                                     |
+        |                                        |
+       nat                                       |
+      OUTPUT                                     |
+        |                                        |
+      filter _________ <routing decision> _______|
+      OUTPUT                   |
+                             mangle
+                           POSTROUTING
+                               |
+                              nat
+                           POSTROUTING
+                               |
+                           <NETWORK>

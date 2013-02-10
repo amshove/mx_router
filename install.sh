@@ -26,7 +26,7 @@ chmod 644 /etc/sysctl.d/99-mx_router.conf
 # service procps start bzw sysctl -p nicht noetig, weil spaeter reboot
 
 echo "# Lege SUDO fuer www-data an (/etc/sudoers.d/mx_router)"
-echo "www-data ALL= NOPASSWD: /sbin/iptables, /sbin/ip" > /etc/sudoers.d/mx_router
+echo "www-data ALL= NOPASSWD: /sbin/iptables, /usr/sbin/ipset" > /etc/sudoers.d/mx_router
 chown root:root /etc/sudoers.d/mx_router
 chmod 0440 /etc/sudoers.d/mx_router
 
@@ -119,9 +119,7 @@ chmod 744 /opt/mx_router/*.sh
 
 echo "# Richte Status-motd ein"
 rm /etc/update-motd.d/*
-cp source/99-mx_router-motd /etc/update-motd.d/
-chown root:root /etc/update-motd.d/99-mx_router-motd
-chmod 755 /etc/update-motd.d/99-mx_router-motd
+ln -s /opt/mx_router/show_status.sh /etc/update-motd.d/99-mx_router-status
 
 echo "# Hinterlege MySQL-PW in /opt/mx_router/etc/mysql.passwd"
 echo $MX_PW > /opt/mx_router/etc/mysql.passwd

@@ -5,7 +5,12 @@
 ############################################################
 
 if($_SESSION["ad_level"] >= 1){
+  if($_GET["cmd"] == "clean" && $_SESSION["ad_level"] >= 5){
+    mysql_query("DELETE FROM history WHERE active = 0");
+  }
+
   echo "<h3>Alte Freigaben</h3>";
+  if($_SESSION["ad_level"] >= 5) echo "<a onClick='return confirm(\"History wirklich leeren?\");' href='index.php?page=history&cmd=clean'>alle l&ouml;schen</a>";
   echo "<table class='hover_row'>";
   echo "  <tr>";
   echo "    <th width='100'>IP</th>";
@@ -15,6 +20,7 @@ if($_SESSION["ad_level"] >= 1){
   echo "    <th width='130'>Gel&ouml;scht von</th>";
   echo "    <th width='130'>Gel&ouml;scht um</th>";
   echo "    <th width='100'>Zeitraum</th>";
+  echo "    <th width='80'>Traffic</th>";
   echo "  </tr>";
   $i=0;
   $query = mysql_query("SELECT * FROM history WHERE active = 0 ORDER BY del_date DESC");
@@ -38,6 +44,7 @@ if($_SESSION["ad_level"] >= 1){
       if(!empty($min)) echo " $min min";
     }
     echo "  </td>";
+    echo "  <td valign='top' align='center'>".$row["traffic"]."</td>";
     echo "</tr>";
     $i++;
   }

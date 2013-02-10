@@ -8,18 +8,21 @@ require("leitungen.inc.php");
 // MySQL-Settings
 $mysql_host = "localhost";
 $mysql_user = "mx_router";
-$mysql_pw = "--MYSQL_PW--";
+$mysql_pw = "MDkwMzliYTgxYzYwOGExOTE1YWNhNTczZmQxZDFjZGIgIC0K";
 $mysql_db = "mx_router";
-
-// Settings
-# Auf dem Server muss ein sudo eingerichtet werden:
-# www-data ALL=NOPASSWD: /sbin/iptables, /sbin/ip
-$iptables_cmd = "sudo /sbin/iptables";
-$ip_cmd = "sudo /sbin/ip";
 
 // Default-PW, was gesetzt wird
 $default_pw = "mx_router";
 
+// Timeslot-Einstellungen, fuer den SelfService per SOAP API
+$timeslots = 30; // minuten pro $timeslot_period stunden darf der User sich selbst Internet geben
+$timeslot_period = 1;
+
+// SOAP-API Daten
+$soap_user = "mx_router";
+$soap_pw = "lkasdasdkifjha980sdujasd";
+
+// Aliase fuer Default-Freischaltungen
 $aliases = array(
   "10.10.0.0/20" => "Alle",
   "10.10.0.0/24" => "Orga",
@@ -27,6 +30,7 @@ $aliases = array(
   "10.10.10.0/24" => "VIP"
 );
 
+// Definition fuer globale Portfreigaben
 $global_ports = array(
   "Steam" => array(  # https://support.steampowered.com/kb_article.php?ref=8571-GLVN-8711
     "tcp" => "27014:27050",
@@ -61,6 +65,11 @@ $global_ports = array(
     "tcp" => "110,143,25,465,585,993,995"
   )
 );
+
+// Befehle
+$iptables_cmd = "sudo /sbin/iptables";
+$ip_cmd = "/sbin/ip";
+$ipset_cmd = "sudo /usr/sbin/ipset";
 
 setlocale(LC_ALL, 'de_DE@euro', 'de_DE.utf8', 'de_DE', 'de', 'ge');
 ?>

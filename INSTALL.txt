@@ -27,7 +27,9 @@ Bei der Installation von MySQL wird das root-PW abgefragt, das fuer MySQL einger
 Hier kann man sich ein sicheres PW aussuchen - der router selbst bekommt spaeter einen eigenen User.
 
 Nach der Installation der Ubuntu-Pakete wird das System konfiguriert.
-Hier wird nochmals das MySQL-root-PW abgefragt. Das wird vom Script verwendet, um einen eigenen User anzulegen.
+Es wird nach einem lokalen DNS-Server gefragt - hier traegt man die IP von dem Server ein, wenn es einen gibt - ansonsten mit Enter bestaetigen.
+Dann wird nach der lokalen DNS-Domain gefragt. Diese wird als search-Domain eingetragen - auch dieses kann man mit Enter uebserspringen.
+Es wird nochmals das MySQL-root-PW abgefragt. Das wird vom Script verwendet, um einen eigenen User anzulegen.
 
 Am Ende der Konfiguration muss der Server neu gestartet werden.
 Das passiert automatisch, nachdem man das Ende des Scriptes mit Enter bestaetigt.

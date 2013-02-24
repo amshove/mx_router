@@ -1,12 +1,13 @@
 <?php
-############################################################
-# Router Webinterface                                      #
-# Copyright (C) 2010 Torsten Amshove <torsten@amshove.net> #
-############################################################
+#######################################################
+# -------------------- mx_router -------------------- #
+# Copyright (C) Torsten Amshove <torsten@amshove.net> #
+# See: http://www.amshove.net                         #
+#######################################################
 
 if($_SESSION["ad_level"] >= 1){
   if($_GET["cmd"] == "clean" && $_SESSION["ad_level"] >= 5){
-    mysql_query("DELETE FROM history WHERE active = 0");
+    mysql_query("DELETE FROM history WHERE active < 1");
   }
 
   echo "<h3>Alte Freigaben</h3>";
@@ -23,7 +24,7 @@ if($_SESSION["ad_level"] >= 1){
   echo "    <th width='80'>Traffic</th>";
   echo "  </tr>";
   $i=0;
-  $query = mysql_query("SELECT * FROM history WHERE active = 0 ORDER BY del_date DESC");
+  $query = mysql_query("SELECT * FROM history WHERE active < 1 ORDER BY del_date DESC");
   while($row = mysql_fetch_assoc($query)){
     echo "<tr";
     if(($i % 2) > 0) echo " class='odd_row'";

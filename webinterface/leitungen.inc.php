@@ -1,23 +1,14 @@
 <?php
-############################################################
-# Router Webinterface                                      #
-# Copyright (C) 2010 Torsten Amshove <torsten@amshove.net> #
+#######################################################
+# -------------------- mx_router -------------------- #
+# Copyright (C) Torsten Amshove <torsten@amshove.net> #
+# See: http://www.amshove.net                         #
 ############################################################
 # Dieses Script wird automatisch durch configure.sh erstellt
 # Manuelle aenderungen werden ueberschrieben!
 ############################################################
-$leitungen = array(
-  array(
-    'name' => 'line2',
-    'ip' => '80.237.237.160',
-    'eth' => 'eth2',
-    'table' => 'kamp'
-  ),
-  array(
-    'name' => 'line3',
-    'ip' => '80.237.237.161',
-    'eth' => 'eth3',
-    'table' => 'kamp'
-  ),
-);
+$leitungen = array();
+$default_leitung = '0';
+$max_fw_mark = '0';
+$local_net = '0.0.0.0/0';
 ?>

@@ -1,11 +1,9 @@
-logger -t iptables Setting default policies
-# chain policies
-# drop everything and open stuff as necessary
+# default policies
 /sbin/iptables -P INPUT DROP
 /sbin/iptables -P FORWARD DROP
 /sbin/iptables -P OUTPUT ACCEPT
 
-logger -t iptables Flushing tables
+# flush tables
 /sbin/iptables -F
 /sbin/iptables -F INPUT
 /sbin/iptables -F OUTPUT
@@ -15,8 +13,7 @@ logger -t iptables Flushing tables
 /sbin/iptables -X
 /sbin/iptables -Z
 
-logger -t iptables Creating user tables + rules
-# SYN protection table
+# SYN protection
 /sbin/iptables -N SYN-FLOOD
 /sbin/iptables -F SYN-FLOOD
 /sbin/iptables -A SYN-FLOOD -m limit --limit 1/s --limit-burst 4 -j RETURN
@@ -25,16 +22,14 @@ logger -t iptables Creating user tables + rules
 /sbin/iptables -A INPUT -p tcp --syn -j SYN-FLOOD
 /sbin/iptables -A INPUT -p tcp ! --syn -m state --state NEW -j DROP
 
-# watch out for fragments
+# fragments
 /sbin/iptables -A INPUT -f -j LOG --log-prefix "IPT FRAGMENTS: "
 /sbin/iptables -A INPUT -f -j DROP
 
-logger -t iptables Setting input/output rules
-# allow loopback in
+# loopback erlauben
 /sbin/iptables -A INPUT -i lo -j ACCEPT
 
-logger -t iptables Setting ICMP rules
-# allow certain inbound ICMP types (on *any* interface)
+# ICMP input erlauben
 /sbin/iptables -A INPUT -p icmp --icmp-type echo-reply -j ACCEPT
 /sbin/iptables -A INPUT -p icmp --icmp-type destination-unreachable -j ACCEPT
 /sbin/iptables -A INPUT -p icmp --icmp-type source-quench -j ACCEPT
@@ -42,18 +37,15 @@ logger -t iptables Setting ICMP rules
 /sbin/iptables -A INPUT -p icmp --icmp-type time-exceeded -j ACCEPT
 /sbin/iptables -A INPUT -p icmp --icmp-type parameter-problem -j ACCEPT
 
-logger -t iptables Setting TCP/UDP rules
-# opened ports
+# Dienste erlauben
 /sbin/iptables -A INPUT -p tcp --sport ntp --dport ntp -j ACCEPT
 /sbin/iptables -A INPUT -p udp --sport ntp --dport ntp -j ACCEPT
 
 /sbin/iptables -A INPUT -p tcp --dport 53 -j ACCEPT
 /sbin/iptables -A INPUT -p udp --dport 53 -j ACCEPT
 
-logger -t iptables Finish up
-# push everything else to state table
-/sbin/iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+/sbin/iptables -A INPUT -p tcp --dport http -j ACCEPT
+/sbin/iptables -A INPUT -p tcp --dport ssh -j ACCEPT
 
-# IP-Liste web_access erlauben
-#/sbin/iptables -A FORWARD -m set --match-set web_access src -j ACCEPT
-#/sbin/iptables -A FORWARD -m set --match-set web_access dst -m state --state ESTABLISHED,RELATED -j ACCEPT
+# bestehende Verbindungen erlauben
+/sbin/iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT

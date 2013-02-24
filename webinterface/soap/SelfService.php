@@ -1,4 +1,9 @@
 <?php
+#######################################################
+# -------------------- mx_router -------------------- #
+# Copyright (C) Torsten Amshove <torsten@amshove.net> #
+# See: http://www.amshove.net                         #
+#######################################################
 require("../config.inc.php");
 require("../functions.inc.php");
 
@@ -51,6 +56,44 @@ if($_SERVER["REMOTE_ADDR"] != "127.0.0.1" && (!isset($_SERVER['PHP_AUTH_USER']) 
     
     <service name='getStatusService'>
       <port name='getStatusPort' binding='getStatusBinding'>
+        <soap:address location='http://".$_SERVER['HTTP_HOST']."/soap/SelfService.php'/>
+      </port>
+    </service>
+
+
+
+    <message name='getGlobalRequest'>
+      <part name='ip' type='xsd:string'/>
+    </message> 
+    <message name='getGlobalResponse'>
+      <part name='Result' type='xsd:array'/>
+    </message> 
+    
+    <portType name='getGlobalPortType'>
+      <operation name='getGlobal'>
+        <input message='tns:getGlobalRequest'/>
+        <output message='tns:getGlobalResponse'/>
+      </operation>
+    </portType> 
+    
+    <binding name='getGlobalBinding' type='tns:getGlobalPortType'>
+      <soap:binding style='rpc'
+        transport='http://schemas.xmlsoap.org/soap/http'/>
+      <operation name='getGlobal'>
+        <soap:operation soapAction='urn:SelfService#getGlobal'/>
+        <input>
+          <soap:body use='encoded' namespace='urn:SelfService'
+            encodingStyle='http://schemas.xmlsoap.org/soap/encoding/'/>
+        </input>
+        <output>
+          <soap:body use='encoded' namespace='urn:SelfService'
+            encodingStyle='http://schemas.xmlsoap.org/soap/encoding/'/>
+        </output>
+      </operation>
+    </binding> 
+    
+    <service name='getGlobalService'>
+      <port name='getGlobalPort' binding='getGlobalBinding'>
         <soap:address location='http://".$_SERVER['HTTP_HOST']."/soap/SelfService.php'/>
       </port>
     </service>
@@ -124,12 +167,38 @@ if($_SERVER["REMOTE_ADDR"] != "127.0.0.1" && (!isset($_SERVER['PHP_AUTH_USER']) 
         foreach($iptables_list[0] as $subnet){
           if($subnet != "0.0.0.0/0" && cidr_match($ip,$subnet)){
             $status["online"] = true;
-            $status["online_end"] = 0;
+            $status["online_end"] = @mysql_result(mysql_query("SELECT end_date FROM history WHERE ip = '".mysql_real_escape_string($subnet)."' AND active = 1 LIMIT 1"),0,"end_date");
           }
         }
       }
 
       return $status;
+      // $status["used"]           - x Minuten bereits benutzt
+      // $status["timeslots"]      - x Minuten Kontingent insgesamt
+      // $status["free"]           - x Minuten noch frei vom Kontingent
+      // $status["period"]         - Zeitraum in Stunden, wie lange das Kontingent gilt
+      // $status["period_reset"]   - Timestamp, wann das Kontingent resettet wird
+      // $status["online"]         - true/false
+      // $status["online_end"]     - wenn online=true: Timestamp, wann die Online-Zeit endet - 0 = kein Ende
+    }
+
+    // Gibt den Status der globalen Freigaben an
+    function getGlobal($ip){
+      $global_status = array();
+      $i = 0;
+      $query = mysql_query("SELECT id,name FROM ports WHERE active = 1");
+      while($row = mysql_fetch_assoc($query)){
+        $global_status[$i]["name"] = $row["name"];
+
+        $status = ports_open($row["id"]);
+        if($status[0] == true && $status[1] == true) $global_status[$i]["online"] = true;
+        else $global_status[$i]["online"] = false;
+
+        $i++;
+      }
+      return $global_status;
+      // $global_status[]["name"]    - Name der globalen Freigabe
+      // $global_status[]["online"]  - true/false
     }
 
     // Schaltet das Internet fuer eine bestimmte Zeit in Minuten frei
@@ -160,11 +229,12 @@ if($_SERVER["REMOTE_ADDR"] != "127.0.0.1" && (!isset($_SERVER['PHP_AUTH_USER']) 
         $return[0] = false;
         $return[1] = "Es sind nicht mehr genug Minuten frei.";
       }else{
-        if(iptables_add($ip)){
-          $now = time();
-          $end_date = $now + ($time*60);
+        $now = time();
+        $end_date = $now + ($time*60);
+        mysql_query("INSERT INTO history SET ip = '".$ip."', add_user = 'SelfService', add_date = '".$now."', end_date = '".$end_date."', active = -1, reason = '$reason'");
+        $id = mysql_insert_id();
+        if($id > 0 && rule_add($id)){
           $used = $used+$time;
-          mysql_query("INSERT INTO history SET ip = '".$ip."', add_user = 'SelfService', add_date = '".$now."', end_date = '".$end_date."', active = 1, reason = '$reason'");
           if(!$admin) mysql_query("INSERT INTO timeslots SET ip = '".$ip."', used = '".$used."', period_start = '".$period_start."' ON DUPLICATE KEY UPDATE used = '".$used."'");
           $return[0] = true;
           $return[1] = "Das Internet ist jetzt f&uuml;r $time Minuten freigeschaltet.";
@@ -174,11 +244,14 @@ if($_SERVER["REMOTE_ADDR"] != "127.0.0.1" && (!isset($_SERVER['PHP_AUTH_USER']) 
         }
       }
       return $return;
+      // $return[0]              - true/false - Freischaltung erfolgreich/nicht erfolgreich
+      // $return[1]              - (Fehler-)meldung
     }
     
     #$server = new SoapServer("http://".$_SERVER['HTTP_HOST']."/soap/SelfService.php?wsdl");
     $server = new SoapServer("http://127.0.0.1/soap/SelfService.php?wsdl");
     $server->addFunction("getStatus");
+    $server->addFunction("getGlobal");
     $server->addFunction("setInternet");
     $server->handle();
   }

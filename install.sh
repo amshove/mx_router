@@ -1,4 +1,9 @@
 #!/bin/bash
+#######################################################
+# -------------------- mx_router -------------------- #
+# Copyright (C) Torsten Amshove <torsten@amshove.net> #
+# See: http://www.amshove.net                         #
+#######################################################
 
 echo "###################################"
 echo "# Bereite den Server als Router vor"
@@ -17,7 +22,7 @@ echo "# Deinstalliere resolvconf & appamor (mit funktioniert das ip_forwarding n
 apt-get -y remove apparmor apparmor-utils resolvconf
 
 echo "# Installiere fehlende Pakete"
-apt-get -y install dnsmasq apache2 libapache2-mod-php5 php5-mysql php5 php5-cli mysql-server ntp
+apt-get -y install dnsmasq apache2 libapache2-mod-php5 php5-mysql php5 php5-cli mysql-server ntp ethtool conntrack
 
 echo "# Erstelle /etc/sysctl.d/99-mx_router.conf"
 cp source/99-mx_router.conf /etc/sysctl.d/99-mx_router.conf
@@ -26,7 +31,7 @@ chmod 644 /etc/sysctl.d/99-mx_router.conf
 # service procps start bzw sysctl -p nicht noetig, weil spaeter reboot
 
 echo "# Lege SUDO fuer www-data an (/etc/sudoers.d/mx_router)"
-echo "www-data ALL= NOPASSWD: /sbin/iptables, /usr/sbin/ipset" > /etc/sudoers.d/mx_router
+echo "www-data ALL= NOPASSWD: /sbin/iptables" > /etc/sudoers.d/mx_router
 chown root:root /etc/sudoers.d/mx_router
 chmod 0440 /etc/sudoers.d/mx_router
 
@@ -102,10 +107,14 @@ chown -R root:root /var/www/
 echo "# Trage MySQL-PW in config.inc.php ein"
 sed -i s/--MYSQL_PW--/$MX_PW/ /var/www/config.inc.php
 
+echo "# Generiere PW fuer API und trage es in config.inc.php ein"
+API_PW=`date | sha1sum | md5sum | base64`
+sed -i s/--API_PW--/$API_PW/ /var/www/config.inc.php
+
 echo "# Lege crontab-Eintrag an"
 echo "" >> /etc/crontab
 echo "# mx_router: Loeschen der zeitlich begrenzten Regeln" >> /etc/crontab
-echo "*/1 *   * * *   root    /usr/bin/php /var/www/cronjob/del_rules.php > /dev/null 2>&1" >> /etc/crontab
+echo "*/1 *   * * *   root    /usr/bin/php /var/www/scripte/del_rules.php > /dev/null 2>&1" >> /etc/crontab
 
 echo "###################################"
 echo "# Richte Scripte ein"
@@ -121,16 +130,11 @@ echo "# Richte Status-motd ein"
 rm /etc/update-motd.d/*
 ln -s /opt/mx_router/show_status.sh /etc/update-motd.d/99-mx_router-status
 
-echo "# Hinterlege MySQL-PW in /opt/mx_router/etc/mysql.passwd"
-echo $MX_PW > /opt/mx_router/etc/mysql.passwd
-chown root:root /opt/mx_router/etc/mysql.passwd
-chmod 600 /opt/mx_router/etc/mysql.passwd
-
-echo "# Lege init-Script /etc/init.d/mx_router an"
-cp source/init.d/mx_router /etc/init.d/mx_router
-chown root:root /etc/init.d/mx_router
-chmod 755 /etc/init.d/mx_router
-update-rc.d mx_router defaults
+echo "# Lege Upstart-Config an (/etc/init/mx_router.conf)"
+cp source/mx_router.conf /etc/init/mx_router.conf
+chown root:root /etc/init/mx_router.conf
+chmod 644 /etc/init/mx_router.conf
+initctl reload-configuration
 
 echo ""
 echo ""
@@ -142,7 +146,7 @@ echo "#   /opt/mx_router/etc/leitungen.d/"
 echo "# eingerichtet werden."
 echo "#"
 echo "# Danach werden die Aenderungen aktiv mit"
-echo "#   /opt/mx_router/etc/configure.sh"
+echo "#   /opt/mx_router/configure.sh"
 echo "#"
 echo "# Danach kann die Webseite benutzt werden"
 echo "#   User: admin   PW: mx_router"

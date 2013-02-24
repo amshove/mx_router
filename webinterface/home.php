@@ -1,8 +1,9 @@
 <?php
-############################################################
-# Router Webinterface                                      #
-# Copyright (C) 2010 Torsten Amshove <torsten@amshove.net> #
-############################################################
+#######################################################
+# -------------------- mx_router -------------------- #
+# Copyright (C) Torsten Amshove <torsten@amshove.net> #
+# See: http://www.amshove.net                         #
+#######################################################
 
 if($_SESSION["ad_level"] >= 1){
   echo "<table>";
@@ -11,11 +12,12 @@ if($_SESSION["ad_level"] >= 1){
   foreach($leitungen as $leitung){
     if(ping($leitung["ip"],$leitung["eth"]) == 0) $class = "meldung_ok";
     else $class = "meldung_error";
-    echo "  <td class='$class' width='70' align='center'>".$leitung["name"]."</td>";
+    if($leitung["fw_mark"] == $default_leitung) $leitung["name"] .= " (default)";
+    echo "  <td class='$class' width='150' align='center'>".$leitung["name"]."</td>";
   }
   echo "  </tr>";
   echo "</table>";
-  if(exec("cat /proc/sys/net/ipv4/ip_forward") == 0) echo "<br><h2>Der Router ist gestoppt - bitte erst mit \"/etc/init.d/mx_router start\" starten!</h2>";
+  if(exec("cat /proc/sys/net/ipv4/ip_forward") == 0) echo "<br><h2>Der Router ist gestoppt - bitte erst mit \"start mx_router\" starten!</h2>";
   echo "<br><br>";
 
 
@@ -28,13 +30,14 @@ if($_SESSION["ad_level"] >= 1){
     }elseif(mysql_num_rows(mysql_query("SELECT id FROM history WHERE ip = '".$_POST["ip"]."' AND active = 1")) > 0){
       echo "<div class='meldung_error'>Es gibt bereits eine Regel f&uuml;r die IP.</div><br>";
     }else{
-      if(iptables_add($_POST["ip"])){
-        $now = time();
-        if(empty($_POST["end_date"])) $end_date = 0;
-        else{
-          $end_date = $now + ($_POST["end_date"]*60);
-        }
-        mysql_query("INSERT INTO history SET ip = '".$_POST["ip"]."', add_user = '".$_SESSION["user_name"]."', add_date = '".$now."', end_date = '".$end_date."', active = 1, reason = '".mysql_real_escape_string($_POST["reason"])."'");
+      $now = time();
+      if(empty($_POST["end_date"])) $end_date = 0;
+      else $end_date = $now + ($_POST["end_date"]*60);
+
+      mysql_query("INSERT INTO history SET ip = '".mysql_real_escape_string($_POST["ip"])."', leitung = '".mysql_real_escape_string($_POST["leitung"])."', add_user = '".mysql_real_escape_string($_SESSION["user_name"])."', add_date = '".$now."', end_date = '".$end_date."', active = -1, reason = '".mysql_real_escape_string($_POST["reason"])."'");
+      $id = mysql_insert_id();
+
+      if(rule_add($id)){
         echo "<div class='meldung_ok'>Regel erfolgreich erstellt</div><br>";
       }else{
         echo "<div class='meldung_error'>Regel konnte nicht angelegt werden!</div><br>";
@@ -49,23 +52,29 @@ if($_SESSION["ad_level"] >= 1){
 
     if(count($ids) > 0){
       foreach($ids as $id){
-        $id = mysql_real_escape_string($id);
-        $ip = @mysql_result(mysql_query("SELECT ip FROM history WHERE id = '".$id."' LIMIT 1"),0,"ip");
-        if(!empty($ip) && iptables_del($ip,$_SESSION["user_name"],$id)){
+        if(rule_del($id,$_SESSION["user_name"])){
           echo "<div class='meldung_ok'>Regel erfolgreich gel&ouml;scht.</div><br>";
         }else{
           echo "<div class='meldung_error'>Regel konnte nicht gel&ouml;scht werden!</div><br>";
         }
       }
     }
-  }elseif($_GET["cmd"] == "ports" && $_SESSION["ad_level"] >= 4){
+  }elseif($_GET["cmd"] == "ports" && $_GET["id"] > 0 && $_SESSION["ad_level"] >= 4){
     $status = false;
     if($_GET["do"] == "on"){
-      $status = ports_add($_GET["ports"]);
+      $status = ports_add($_GET["id"]);
     }elseif($_GET["do"] == "off"){
-      $status = ports_del($_GET["ports"]);
+      $status = ports_del($_GET["id"]);
     }
     if($status) echo "<div class='meldung_ok'>Regel erfolgreich ge&auml;ndert.</div><br>";
+    else echo "<div class='meldung_error'>Regel nicht erfolgreich ge&auml;ndert.</div><br>";
+  }elseif($_POST["port_id"] > 0 && $_SESSION["ad_level"] >= 4){
+    if(ports_leitung_chg($_POST["port_id"],$_POST["leitung"])) echo "<div class='meldung_ok'>Regel erfolgreich ge&auml;ndert.</div><br>";
+    else echo "<div class='meldung_error'>Regel nicht erfolgreich ge&auml;ndert.</div><br>";
+  }
+
+  if($_GET["cmd"] == "chg" && $_GET["id"]){
+    if(leitung_chg($_GET["id"],$_GET["leitung"])) echo "<div class='meldung_ok'>Regel erfolgreich ge&auml;ndert.</div><br>";
     else echo "<div class='meldung_error'>Regel nicht erfolgreich ge&auml;ndert.</div><br>";
   }
 
@@ -94,6 +103,12 @@ if($_SESSION["ad_level"] >= 1){
     </td>";
   echo "  </tr>";
   echo "  <tr>";
+  echo "    <td>Leitung:</td>";
+  echo "    <td><select name='leitung'><option value='0'>default</option>";
+  foreach($leitungen as $leitung) echo "<option value='".$leitung["fw_mark"]."'>".$leitung["name"]."</option>";
+  echo "    </select></td>";
+  echo "  </tr>";
+  echo "  <tr>";
   echo "    <td>Grund:</td>";
   echo "    <td><textarea name='reason'></textarea></td>";
   echo "  </tr>";
@@ -105,6 +120,9 @@ if($_SESSION["ad_level"] >= 1){
 
   echo "  </td><td width='50'>&nbsp;</td><td valign='top'>";
 
+  $iptables_leitungen = iptables_list(true);
+  $iptables_leitungen = $iptables_leitungen[0];
+
   $iptables_lines = iptables_list();
   $iptables_ips = $iptables_lines[0];
   $iptables_traffic = $iptables_lines[1];
@@ -114,9 +132,12 @@ if($_SESSION["ad_level"] >= 1){
   echo "  <tr>";
   echo "    <th width='100'>&nbsp;</th>";
   echo "    <th width='100'>Traffic</th>";
+  echo "    <th width='100'>Leitung</th>";
   echo "  </tr>";
-  foreach($global_ports as $name => $ports){
-    $status = ports_open($name);
+  $query = mysql_query("SELECT * FROM ports ORDER BY name");
+  while($row = mysql_fetch_assoc($query)){
+    $status = ports_open($row["id"]);
+    $status_leitung = ports_open($row["id"],true);
     if($status[0] == true && $status[1] == true){
       $class = "meldung_ok";
       $do = "off";
@@ -128,32 +149,26 @@ if($_SESSION["ad_level"] >= 1){
       $do = "off";
     }
 
+    echo "<form action='index.php' method='POST'>";
+    echo "<input type='hidden' name='port_id' value='".$row["id"]."'>";
     echo "<tr>";
     echo "  <th class='$class'>";
-    if($_SESSION["ad_level"] >= 4) echo "<a href='index.php?cmd=ports&do=$do&ports=$name' onClick='return confirm(\"Die globale Regel f&uuml;r $name wirklich &auml;ndern?\");'>";
-    echo $name;
+    if($_SESSION["ad_level"] >= 4) echo "<a href='index.php?cmd=ports&do=$do&id=".$row["id"]."' onClick='return confirm(\"Die globale Regel f&uuml;r ".$row["name"]." wirklich &auml;ndern?\");'>";
+    echo $row["name"];
     if($_SESSION["ad_level"] >= 4) echo "</a>";
-    echo "    <td align='center'>".$iptables_traffic[$name]."</td>";
+    echo "    <td align='center'>".$iptables_traffic[escapeshellarg($row["name"])]."</td>";
+    if($_SESSION["ad_level"] >= 4) $disabled = "";
+    else $disabled = "disabled='disabled'";
+    echo "    <td align='center'><select $disabled name='leitung' onChange='if(confirm(\"Leitungszuordnung f&uuml;r ".$row["name"]." wirklich &auml;ndern?\\nACHTUNG: Die Regel gilt auch, wenn die globale Freischaltung deaktiviert ist!\")) this.form.submit();'><option value='0'>default</option>";
+    foreach($leitungen as $leitung){
+      if($status_leitung[2] == $leitung["fw_mark"]) $select = "selected='selected'";
+      else $select = "";
+      echo "<option $select value='".$leitung["fw_mark"]."'>".$leitung["name"]."</option>";
+    }
+    echo "    </select></td>";
     echo "  </th>";
     echo "</tr>";
-  }
-  echo "</table>";
-
-  echo "  </td><td width='50'>&nbsp;</td><td valign='top'>";
-
-  echo "<h3>Default Freigaben</h3>";
-  echo "<table>";
-  echo "  <tr>";
-  echo "    <th width='150'>&nbsp;</th>";
-  echo "    <th width='100'>Traffic</th>";
-  echo "  </tr>";
-  foreach($aliases as $k => $v){
-    if(in_array($k,$iptables_ips)){
-      echo "<tr>";
-      echo "  <td>".$k." (".$v.")</td>";
-      echo "  <td align='center'>".$iptables_traffic[$k]."</td>";
-      echo "</tr>";
-    }
+    echo "</form>";
   }
   echo "</table>";
 
@@ -183,6 +198,7 @@ if($_SESSION["ad_level"] >= 1){
   echo "    <th width='200'>Grund</th>";
   echo "    <th width='130'>Angelegt von</th>";
   echo "    <th width='100'>L&auml;uft ab ..</th>";
+  echo "    <th width='100'>Leitung</th>";
   echo "    <th width='30'>&nbsp;</th>";
   echo "  </tr>";
 
@@ -190,7 +206,7 @@ if($_SESSION["ad_level"] >= 1){
   $i = 0;
   $query = mysql_query("SELECT * FROM history WHERE active = 1 ORDER BY INET_ATON(ip)");
   while($row = mysql_fetch_assoc($query)){ 
-    $dns = gethostbyaddr($row["ip"]);
+    $dns = @gethostbyaddr($row["ip"]);
     echo "<tr";
     if(($i % 2) > 0) echo " class='odd_row'";
     if(!in_array($row["ip"],$iptables_ips)){ echo " style='background-color: #CC9999;'"; $error = true; }
@@ -205,6 +221,13 @@ if($_SESSION["ad_level"] >= 1){
     if(empty($row["end_date"])) echo "nie";
     else echo strftime("%a, %R Uhr",$row["end_date"]);
     echo "  </td>";
+    echo "  <td valign='top' align='center'><select name='leitung' onChange='if(confirm(\"Leitungszuordnung f&uuml;r ".$row["ip"]." wirklich &auml;ndern?\")) document.location.href = \"index.php?cmd=chg&id=".$row["id"]."&leitung=\"+this.value;'><option value='0'>default</option>";
+    foreach($leitungen as $leitung){
+      if($iptables_leitungen[$row["ip"]] == $leitung["fw_mark"]) $select = "selected='selected'";
+      else $select = "";
+      echo "<option $select value='".$leitung["fw_mark"]."'>".$leitung["name"]."</option>";
+    }
+    echo "  </select></td>";
     echo "  <td valign='top'><a onClick='return confirm(\"Freigabe f&uuml;r ".$row["ip"]." wirklich l&ouml;schen?\");' href='index.php?cmd=del&id=".$row["id"]."'>del</a></td>";
     echo "</tr>";
     $i++;

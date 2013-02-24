@@ -1,75 +1,30 @@
 <?php
-############################################################
-# Router Webinterface                                      #
-# Copyright (C) 2010 Torsten Amshove <torsten@amshove.net> #
-############################################################
+#######################################################
+# -------------------- mx_router -------------------- #
+# Copyright (C) Torsten Amshove <torsten@amshove.net> #
+# See: http://www.amshove.net                         #
+#######################################################
 require("leitungen.inc.php");
 
 // MySQL-Settings
 $mysql_host = "localhost";
 $mysql_user = "mx_router";
-$mysql_pw = "MDkwMzliYTgxYzYwOGExOTE1YWNhNTczZmQxZDFjZGIgIC0K";
+$mysql_pw = "--MYSQL_PW--";
 $mysql_db = "mx_router";
 
-// Default-PW, was gesetzt wird
+// Default-PW, was gesetzt wird wenn User angelegt werden
 $default_pw = "mx_router";
 
 // Timeslot-Einstellungen, fuer den SelfService per SOAP API
-$timeslots = 30; // minuten pro $timeslot_period stunden darf der User sich selbst Internet geben
-$timeslot_period = 1;
+$timeslots = 30;        // x Minuten pro $timeslot_period darf der User sich selbst Internet geben
+$timeslot_period = 24;  // nach x Stunden wird der Counter resettet und der User bekommt wieder $timeslot Minuten
 
 // SOAP-API Daten
-$soap_user = "mx_router";
-$soap_pw = "lkasdasdkifjha980sdujasd";
+$soap_user = "mx_router";              // User fuer die API
+$soap_pw = "--API_PW--"; // PW fuer die API
 
-// Aliase fuer Default-Freischaltungen
-$aliases = array(
-  "10.10.0.0/20" => "Alle",
-  "10.10.0.0/24" => "Orga",
-  "10.10.1.0/24" => "Server",
-  "10.10.10.0/24" => "VIP"
-);
-
-// Definition fuer globale Portfreigaben
-$global_ports = array(
-  "Steam" => array(  # https://support.steampowered.com/kb_article.php?ref=8571-GLVN-8711
-    "tcp" => "27014:27050",
-    "udp" => "27000:27030,4380,1500,3005,3101,28960"
-  ),
-  "Starcraft II" => array(
-    "tcp" => "1119",
-    "udp" => "1119"
-  ),
-  "Xfire" => array(  # http://www.xfire.com/faq/#158
-    "tcp" => "25999"
-  ),
-  "ICQ" => array(
-    "tcp" => "5190"
-  ),
-  "CoD MW3" => array(
-    "tcp" => "3074,27000:27050",
-    "udp" => "3074,8766"
-  ),
-  "LoL (+ HTTP)" => array(
-    "tcp" => "80,443,2099,5223,56000:60000",
-    "udp" => "80,2001,3000:6000,10000:60000"
-  ),
-#  "BF3 (+ HTTP)" => array( # ungetestet
-#    "tcp" => "80,443,9988,17502,20000:30000,42127",
-#    "udp" => "3659,14000:14016,22990:23006,25200:25300"
-#  )
-  "HTTP" => array(
-    "tcp" => "80,443"
-  ),
-  "Mails" => array(
-    "tcp" => "110,143,25,465,585,993,995"
-  )
-);
-
-// Befehle
+// Befehle - muss nicht geaendert werden
 $iptables_cmd = "sudo /sbin/iptables";
-$ip_cmd = "/sbin/ip";
-$ipset_cmd = "sudo /usr/sbin/ipset";
 
 setlocale(LC_ALL, 'de_DE@euro', 'de_DE.utf8', 'de_DE', 'de', 'ge');
 ?>

@@ -1,8 +1,9 @@
 <?php
-############################################################
-# Router Webinterface                                      #
-# Copyright (C) 2010 Torsten Amshove <torsten@amshove.net> #
-############################################################
+#######################################################
+# -------------------- mx_router -------------------- #
+# Copyright (C) Torsten Amshove <torsten@amshove.net> #
+# See: http://www.amshove.net                         #
+#######################################################
 
 if($_SESSION["ad_level"] >= 1){
   if($_GET["cmd"] == "reset" && $_SESSION["ad_level"] >= 4){

@@ -1,4 +1,9 @@
 #!/bin/bash
+#######################################################
+# -------------------- mx_router -------------------- #
+# Copyright (C) Torsten Amshove <torsten@amshove.net> #
+# See: http://www.amshove.net                         #
+#######################################################
 
 echo "# ACHTUNG: Der Router wird gestoppt"
 read -p "Soll der Router nach dem Konfigurieren wieder gestartet werden? (y/n) " START
@@ -15,7 +20,7 @@ LOCAL_NET=`ip route | grep eth0 | grep link | grep -v default | cut -d " " -f 1`
 LOCAL_IP=`ifconfig eth0 | grep 'inet ' | cut -d: -f2 | awk '{ print $1}'`
 
 echo "# Stopping mx_router .."
-/etc/init.d/mx_router stop
+stop mx_router
 
 # Routing-Tables erstellen
 echo "#
@@ -45,11 +50,13 @@ fi
 DEFAULT_GW="" # Wird vom letzten Element in der Schleife gefuellt
 DEFAULT_GW_IF="" # Interface zum Default-GW
 DEFAULT_GW_IP="" # Src-IP zum Default-GW
+DEFAULT_FW_MARK="" # fw_mark zur default-Leitung
 
 # Leitungs-Configs durchgehen und Scripte erstellen
 for LEITUNG_CFG in `ls -1 $PFAD/etc/leitungen.d/ | grep "\.conf$" | grep -v template.conf`; do
   echo "### Leitung: $LEITUNG_CFG ###"
   ACTIVE=""
+  DEFAULT=""
   INTERFACE=""
   WINAME=""
   NAME=""
@@ -66,6 +73,7 @@ for LEITUNG_CFG in `ls -1 $PFAD/etc/leitungen.d/ | grep "\.conf$" | grep -v temp
     VALUE=`echo $LINE | cut -d "=" -f 2`
     case $KEY in
       "ACTIVE") ACTIVE=$VALUE ;;
+      "DEFAULT") DEFAULT=$VALUE ;;
       "INTERFACE") INTERFACE=$VALUE ;;
       "WINAME") WINAME=$VALUE ;;
       "NAME") NAME=$VALUE ;;
@@ -81,13 +89,18 @@ for LEITUNG_CFG in `ls -1 $PFAD/etc/leitungen.d/ | grep "\.conf$" | grep -v temp
     echo "# Lasse $LEITUNG_CFG aus - ist deaktiviert."
     continue
   fi
-  if [ "$ACTIVE" == "" ] || [ "$INTERFACE" == "" ] || [ "$WINAME" == "" ] || [ "$NAME" == "" ] || [ "$SUBNET" == "" ] || [ "$IP" == "" ] || [ "$GW" == "" ] || [ "$PING_IP" == "" ]; then
+  if [ "$ACTIVE" == "" ] || [ "$DEFAULT" == "" ] || [ "$INTERFACE" == "" ] || [ "$WINAME" == "" ] || [ "$NAME" == "" ] || [ "$SUBNET" == "" ] || [ "$IP" == "" ] || [ "$GW" == "" ] || [ "$PING_IP" == "" ]; then
     echo "# Lasse $LEITUNG_CFG aus - es sind nicht alle Werte gesetzt."
     continue
   fi
-  DEFAULT_GW=$GW
-  DEFAULT_GW_IF=$INTERFACE
-  DEFAULT_GW_IP=$IP
+
+  if [ "$DEFAULT" == "true" ]; then
+    DEFAULT_GW=$GW
+    DEFAULT_GW_IF=$INTERFACE
+    DEFAULT_GW_IP=$IP
+    DEFAULT_FW_MARK=$I
+  fi
+
   MASK=`echo $SUBNET | cut -d "/" -f 2`
   WINAME=`echo $WINAME | sed s/^\"// | sed s/\"$//`
 
@@ -97,9 +110,9 @@ for LEITUNG_CFG in `ls -1 $PFAD/etc/leitungen.d/ | grep "\.conf$" | grep -v temp
   # Routing erstellen
   echo "### Leitung: $LEITUNG_CFG ###" >> $PFAD/start.routing.tmp
   echo "# Interface einstellen" >> $PFAD/start.routing.tmp
-  echo "ip addr flush $INTERFACE" >> $PFAD/start.routing.tmp
+#  echo "ip addr flush $INTERFACE" >> $PFAD/start.routing.tmp
   echo "ip route flush table $NAME" >> $PFAD/start.routing.tmp
-  echo "ip link set $INTERFACE down" >> $PFAD/start.routing.tmp
+#  echo "ip link set $INTERFACE down" >> $PFAD/start.routing.tmp
   echo "ip addr add $IP/$MASK dev $INTERFACE" >> $PFAD/start.routing.tmp
   echo "ip link set $INTERFACE up" >> $PFAD/start.routing.tmp
   echo "" >> $PFAD/start.routing.tmp
@@ -127,28 +140,36 @@ for LEITUNG_CFG in `ls -1 $PFAD/etc/leitungen.d/ | grep "\.conf$" | grep -v temp
   echo "/sbin/iptables -A FORWARD -i $INTERFACE -m state --state ESTABLISHED,RELATED -j ACCEPT -m comment --comment \"Bestehende Verbindungen von extern - $INTERFACE\"" >> $PFAD/start.firewall.tmp
   echo "" >> $PFAD/start.firewall.tmp
   echo "# NAT einstellen" >> $PFAD/start.firewall.tmp
-#  echo "iptables -t nat -A POSTROUTING -o $INTERFACE -j SNAT --to-source $IP" >> $PFAD/start.firewall.tmp
   echo "iptables -t nat -A POSTROUTING -m mark --mark $I -j SNAT --to-source $IP" >> $PFAD/start.firewall.tmp
   echo "" >> $PFAD/start.firewall.tmp
   echo "" >> $PFAD/start.firewall.tmp
 
   # Webinterface Einstellung
-  #echo "  $(( $I-1 )) => array(" >> $PFAD/leitungen.inc.php.tmp
   echo "  array(" >> $PFAD/leitungen.inc.php.tmp
   echo "    'name' => '$WINAME'," >> $PFAD/leitungen.inc.php.tmp
   echo "    'ip' => '$PING_IP'," >> $PFAD/leitungen.inc.php.tmp
   echo "    'eth' => '$INTERFACE'," >> $PFAD/leitungen.inc.php.tmp
-  echo "    'table' => 'kamp'" >> $PFAD/leitungen.inc.php.tmp
+  echo "    'table' => '$NAME'," >> $PFAD/leitungen.inc.php.tmp
+  echo "    'fw_mark' => '$I'" >> $PFAD/leitungen.inc.php.tmp
   echo "  )," >> $PFAD/leitungen.inc.php.tmp
 
   let I=$I+1
 done
 
+# Wenn keine default-Leitung ausgewaehlt wurde, nehm die letzte ..
+if [ "$DEFAULT_GW" == "" ]; then
+  DEFAULT_GW=$GW
+  DEFAULT_GW_IF=$INTERFACE
+  DEFAULT_GW_IP=$IP
+  let DEFAULT_FW_MARK=$I-1
+fi
+
 # Script-Header erstellen
 echo "#!/bin/bash" > $PFAD/start.sh
-echo "############################################################" >> $PFAD/start.sh
-echo "# Router Webinterface                                      #" >> $PFAD/start.sh
-echo "# Copyright (C) 2010 Torsten Amshove <torsten@amshove.net> #" >> $PFAD/start.sh
+echo "#######################################################" >> $PFAD/start.sh
+echo "# -------------------- mx_router -------------------- #" >> $PFAD/start.sh
+echo "# Copyright (C) Torsten Amshove <torsten@amshove.net> #" >> $PFAD/start.sh
+echo "# See: http://www.amshove.net                         #" >> $PFAD/start.sh
 echo "############################################################" >> $PFAD/start.sh
 echo "# Dieses Script wird automatisch durch configure.sh erstellt" >> $PFAD/start.sh
 echo "# Manuelle aenderungen werden ueberschrieben!" >> $PFAD/start.sh
@@ -157,15 +178,6 @@ echo "" >> $PFAD/start.sh
 cp $PFAD/start.sh $PFAD/stop.sh # Bis hier hin sind beide gleich
 
 # start.sh erstellen
-#echo "###################" >> $PFAD/start.sh
-#echo "# ipset-LISTEN" >> $PFAD/start.sh
-#echo "###################" >> $PFAD/start.sh
-#echo "ipset -! create web_access_ip hash:ip timeout 0" >> $PFAD/start.sh
-#echo "ipset -! create web_access_net hash:net timeout 0" >> $PFAD/start.sh
-#echo "ipset -! create web_access list:set" >> $PFAD/start.sh
-#echo "ipset -! add web_access web_access_ip" >> $PFAD/start.sh
-#echo "ipset -! add web_access web_access_net" >> $PFAD/start.sh
-#echo "" >> $PFAD/start.sh
 echo "###################" >> $PFAD/start.sh
 echo "# ROUTING" >> $PFAD/start.sh
 echo "###################" >> $PFAD/start.sh
@@ -188,20 +200,11 @@ echo "### additional_rules.conf ###" >> $PFAD/start.sh
 cat $PFAD/etc/additional_rules.conf >> $PFAD/start.sh
 echo "" >> $PFAD/start.sh
 echo "" >> $PFAD/start.sh
-echo "MYSQL_USER=\"mx_router\"" >> $PFAD/start.sh
-echo "MYSQL_PW=\`cat $PFAD/etc/mysql.passwd\`" >> $PFAD/start.sh
-echo "MYSQL_DB=\"mx_router\"" >> $PFAD/start.sh
+echo "# Default-Leitung waehlen und MARK auf die komplette CONNECTION setzen" >> $PFAD/start.sh
+echo "/sbin/iptables -t mangle -A PREROUTING -s $LOCAL_NET -j MARK --set-mark $DEFAULT_FW_MARK" >> $PFAD/start.sh
 echo "" >> $PFAD/start.sh
 echo "# Alte Eintraege aus der DB wiederherstellen" >> $PFAD/start.sh
-echo "for IP in \`echo \"SELECT ip FROM history WHERE active = 1\" | mysql -u mx_router --password=\$MYSQL_PW mx_router | tail -n +2\`; do" >> $PFAD/start.sh
-echo "  echo \"Aktiviere Regel fuer \$IP - stand noch in der DB ..\"" >> $PFAD/start.sh
-echo "  /sbin/iptables -I FORWARD --source \$IP -j ACCEPT" >> $PFAD/start.sh
-echo "done" >> $PFAD/start.sh
-echo "" >> $PFAD/start.sh
-echo "# Default-Leitung waehlen und MARK auf die komplette CONNECTION setzen" >> $PFAD/start.sh
-echo "/sbin/iptables -t mangle -A PREROUTING -j CONNMARK --restore-mark" >> $PFAD/start.sh
-echo "/sbin/iptables -t mangle -A PREROUTING -s $LOCAL_NET -j MARK --set-mark 1" >> $PFAD/start.sh
-echo "/sbin/iptables -t mangle -A PREROUTING -j CONNMARK --save-mark" >> $PFAD/start.sh
+echo "/usr/bin/php /var/www/scripte/restore.php > /dev/null 2>&1" >> $PFAD/start.sh
 echo "" >> $PFAD/start.sh
 echo "###################" >> $PFAD/start.sh
 echo "# Forwarding aktivieren" >> $PFAD/start.sh
@@ -215,12 +218,6 @@ echo "# Forwarding deaktivieren" >> $PFAD/stop.sh
 echo "sysctl -w net.ipv4.ip_forward=0" >> $PFAD/stop.sh
 echo "" >> $PFAD/stop.sh
 echo "" >> $PFAD/stop.sh
-#echo "###################" >> $PFAD/start.sh
-#echo "# ipset-LISTEN" >> $PFAD/start.sh
-#echo "###################" >> $PFAD/start.sh
-#echo "ipset flush web_access_ip" >> $PFAD/stop.sh
-#echo "ipset flush web_access_net" >> $PFAD/stop.sh
-#echo "" >> $PFAD/stop.sh
 echo "###################" >> $PFAD/stop.sh
 echo "# ROUTING" >> $PFAD/stop.sh
 echo "###################" >> $PFAD/stop.sh
@@ -251,9 +248,10 @@ echo "/sbin/iptables -Z" >> $PFAD/stop.sh
 
 # leitungen.inc.php erstellen
 echo "<?php" > /var/www/leitungen.inc.php
-echo "############################################################" >> /var/www/leitungen.inc.php
-echo "# Router Webinterface                                      #" >> /var/www/leitungen.inc.php
-echo "# Copyright (C) 2010 Torsten Amshove <torsten@amshove.net> #" >> /var/www/leitungen.inc.php
+echo "#######################################################" >> /var/www/leitungen.inc.php
+echo "# -------------------- mx_router -------------------- #" >> /var/www/leitungen.inc.php
+echo "# Copyright (C) Torsten Amshove <torsten@amshove.net> #" >> /var/www/leitungen.inc.php
+echo "# See: http://www.amshove.net                         #" >> /var/www/leitungen.inc.php
 echo "############################################################" >> /var/www/leitungen.inc.php
 echo "# Dieses Script wird automatisch durch configure.sh erstellt" >> /var/www/leitungen.inc.php
 echo "# Manuelle aenderungen werden ueberschrieben!" >> /var/www/leitungen.inc.php
@@ -261,6 +259,9 @@ echo "############################################################" >> /var/www/
 echo "\$leitungen = array(" >> /var/www/leitungen.inc.php
 cat $PFAD/leitungen.inc.php.tmp >> /var/www/leitungen.inc.php
 echo ");" >> /var/www/leitungen.inc.php
+echo "\$default_leitung = '$DEFAULT_FW_MARK';" >> /var/www/leitungen.inc.php
+echo "\$max_fw_mark = '$(( I-1 ))';" >> /var/www/leitungen.inc.php
+echo "\$local_net = '$LOCAL_NET';" >> /var/www/leitungen.inc.php
 echo "?>" >> /var/www/leitungen.inc.php
 
 rm $PFAD/start.routing.tmp
@@ -276,11 +277,11 @@ chmod 744 $PFAD/stop.sh
 echo "#############################"
 echo "# Scripte konfiguriert"
 echo "# Du kannst den Router jetzt starten"
-echo "#   /etc/init.d/mx_router start"
+echo "#   start mx_router"
 echo "#############################"
 
 if [ "$START" == "y" ]; then
   echo ""
   echo "# Starte mx_router .."
-  /etc/init.d/mx_router start
+  start mx_router
 fi

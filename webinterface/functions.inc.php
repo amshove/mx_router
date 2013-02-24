@@ -1,8 +1,9 @@
 <?php
-############################################################
-# Router Webinterface                                      #
-# Copyright (C) 2010 Torsten Amshove <torsten@amshove.net> #
-############################################################
+#######################################################
+# -------------------- mx_router -------------------- #
+# Copyright (C) Torsten Amshove <torsten@amshove.net> #
+# See: http://www.amshove.net                         #
+#######################################################
 
 // Bezeichnungen der admin-level
 $ad_level = array(
@@ -20,174 +21,241 @@ session_start();
 if(!empty($_SESSION["user_id"])) $logged_in = true;
 else $logged_in = false;
 
+// Status der Leitungen testen
 function ping($ip, $eth = ""){
-  if(!empty($eth)) $eth = "-I $eth";
-  exec("ping -n -q -c 1 -W 1 $ip $eth > /dev/null 2>&1",$retarr,$retrc);
+  if(!empty($eth)) $eth = "-I ".escapeshellarg($eth);
+  exec("ping -n -q -c 1 -W 1 ".escapeshellarg($ip)." ".$eth." > /dev/null 2>&1",$retarr,$retrc);
   return $retrc;
 }
 
-function iptables_add($ip){
+// FW-Freischaltung anlegen
+function rule_add($id){
   global $iptables_cmd;
-  $cmd = $iptables_cmd." -I FORWARD --source $ip -j ACCEPT";
-  exec($cmd,$retarr,$retrc);
-  if($retrc != 0){
-    if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
-    return false;
+  $id = mysql_real_escape_string($id);
+  $values = mysql_fetch_assoc(mysql_query("SELECT * FROM history WHERE id = '".$id."' LIMIT 1"));
+
+  if($values["ip"]){
+    $cmd = $iptables_cmd." -A FORWARD --source ".escapeshellarg($values["ip"])." -j ACCEPT";
+    exec($cmd,$retarr,$retrc);
+    if($retrc != 0){
+      if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
+      return false;
+    }
+    mysql_query("UPDATE history SET active = 1 WHERE id = '".$id."' LIMIT 1");
+
+    // Leitungszuordnung
+    if($values["leitung"] > 0) return leitung_chg($id,$values["leitung"]);
+
+    return true;
+  }
+  return false;
+}
+
+// FW-Freischaltung entfernen
+function rule_del($id,$del_user){
+  global $iptables_cmd;
+  $id = mysql_real_escape_string($id);
+  $del_user = mysql_real_escape_string($del_user);
+  $values = mysql_fetch_assoc(mysql_query("SELECT * FROM history WHERE id = '".$id."' LIMIT 1"));
+
+  if($values["ip"]){
+    $tmp = iptables_list();
+    $iptables_traffic = $tmp[1];
+
+    $cmd = $iptables_cmd." -D FORWARD --source ".escapeshellarg($values["ip"])." -j ACCEPT";
+    exec($cmd,$retarr,$retrc);
+    if($retrc != 0){
+      if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
+      return false;
+    }
+
+    mysql_query("UPDATE history SET active = 0, del_user = '".$del_user."', del_date = '".time()."', traffic = '".$iptables_traffic[$values["ip"]]."' WHERE id = '".$id."' LIMIT 1");
+    leitung_chg($id,0); // Leitungs-Regel loeschen
+    return true;
+  }
+  return false;
+}
+
+// Leitungszuordnung fuer IP aendern
+function leitung_chg($id,$leitung_neu){
+  global $iptables_cmd, $max_fw_mark;
+  if($leitung_neu > $max_fw_mark) $leitung_neu = 0;
+
+  $id = mysql_real_escape_string($id);
+  $values = mysql_fetch_assoc(mysql_query("SELECT * FROM history WHERE id = '".$id."' LIMIT 1"));
+
+  // Alten Eintrag loeschen
+  if($values["leitung"] > 0){
+    $cmd = $iptables_cmd." -t mangle -D PREROUTING --source ".escapeshellarg($values["ip"])." -j MARK --set-mark ".escapeshellarg($values["leitung"]);
+    exec($cmd,$retarr,$retrc);
+  }
+
+  mysql_query("UPDATE history SET leitung = '".mysql_real_escape_string($leitung_neu)."' WHERE id = '".$id."' LIMIT 1");
+
+  // Neuer Eintrag wenn noetig
+  if($leitung_neu > 0){
+    $cmd = $iptables_cmd." -t mangle -I PREROUTING 2 --source ".escapeshellarg($values["ip"])." -j MARK --set-mark ".escapeshellarg($leitung_neu);
+    exec($cmd,$retarr,$retrc);
+    if($retrc != 0){
+      if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
+      return false;
+    }
   }
   return true;
 }
 
-function iptables_del($ip,$del_user,$id){
+// Ports global freigeben
+function ports_add($id){
   global $iptables_cmd;
-  $cmd = $iptables_cmd." -L FORWARD -n --line-numbers -v | grep ACCEPT";
-  exec($cmd,$retarr,$retrc);
-  if($retrc != 0){
-    if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
-    return false;
+  $id = mysql_real_escape_string($id);
+  $values = mysql_fetch_assoc(mysql_query("SELECT * FROM ports WHERE id = '".$id."' LIMIT 1"));
+
+  if(empty($values["tcp"]) && empty($values["udp"])) return false;
+
+  if(!empty($values["tcp"])){
+    $cmd = $iptables_cmd." -A FORWARD -m multiport -p tcp --dports ".escapeshellarg($values["tcp"])." -j ACCEPT -m comment --comment \"Global-Ports: ".escapeshellarg($values["name"])."\"";
+    exec($cmd,$retarr,$retrc);
+    if($retrc != 0){
+      if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
+      return false;
+    }
   }
-  foreach($retarr as $line){
-    $fields = preg_split("/\s/",$line, -1, PREG_SPLIT_NO_EMPTY);
-    if($fields[8] == $ip){
-      $num = $fields[0];
-      if(is_numeric($num)){
-        $cmd = $iptables_cmd." -D FORWARD ".$num;
-        unset($retarr,$retrc);
-        exec($cmd,$retarr,$retrc);
-        if($retrc != 0){
-          if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
-          return false;
-        }else{
-          mysql_query("UPDATE history SET active = 0, del_user = '".$del_user."', del_date = '".time()."', traffic = '".$fields[2]."' WHERE id = '".$id."'");
-          return true;
-        }
+
+  if(!empty($values["udp"])){
+    $cmd = $iptables_cmd." -A FORWARD -m multiport -p udp --dports ".escapeshellarg($values["udp"])." -j ACCEPT -m comment --comment \"Global-Ports: ".escapeshellarg($values["name"])."\"";
+    exec($cmd,$retarr,$retrc);
+    if($retrc != 0){
+      if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
+      return false;
+    }
+  }
+
+  mysql_query("UPDATE ports SET active = 1 WHERE id = '".$id."' LIMIT 1");
+  return true;
+}
+
+// Globale Freigabe entfernen
+function ports_del($id){
+  global $iptables_cmd;
+  $id = mysql_real_escape_string($id);
+  $values = mysql_fetch_assoc(mysql_query("SELECT * FROM ports WHERE id = '".$id."' LIMIT 1"));
+
+  if(empty($values["tcp"]) && empty($values["udp"])) return false;
+
+  if(!empty($values["tcp"])){
+    $cmd = $iptables_cmd." -D FORWARD -m multiport -p tcp --dports ".escapeshellarg($values["tcp"])." -j ACCEPT -m comment --comment \"Global-Ports: ".escapeshellarg($values["name"])."\"";
+    exec($cmd,$retarr,$retrc);
+    if($retrc != 0){
+      if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
+      return false;
+    }
+  }
+
+  if(!empty($values["udp"])){
+    $cmd = $iptables_cmd." -D FORWARD -m multiport -p udp --dports ".escapeshellarg($values["tcp"])." -j ACCEPT -m comment --comment \"Global-Ports: ".escapeshellarg($values["name"])."\"";
+    exec($cmd,$retarr,$retrc);
+    if($retrc != 0){
+      if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
+      return false;
+    }
+  }
+
+  mysql_query("UPDATE ports SET active = 0 WHERE id = '".$id."' LIMIT 1");
+  return true;
+}
+
+// Leitungszuordnung fuer Ports aendern
+function ports_leitung_chg($id,$leitung_neu){
+  global $iptables_cmd, $max_fw_mark;
+  if($leitung_neu > $max_fw_mark) $leitung_neu = 0;
+
+  $id = mysql_real_escape_string($id);
+  $values = mysql_fetch_assoc(mysql_query("SELECT * FROM ports WHERE id = '".$id."' LIMIT 1"));
+
+  // Alten Eintrag loeschen
+  if($values["leitung"] > 0){
+    if(!empty($values["tcp"])){
+      $cmd = $iptables_cmd." -t mangle -D PREROUTING -m multiport -p tcp --dports ".escapeshellarg($values["tcp"])." -j MARK --set-mark ".escapeshellarg($values["leitung"])." -m comment --comment \"Global-Ports: ".escapeshellarg($values["name"])."\"";
+      exec($cmd,$retarr,$retrc);
+    }
+    if(!empty($values["udp"])){
+      $cmd = $iptables_cmd." -t mangle -D PREROUTING -m multiport -p udp --dports ".escapeshellarg($values["tcp"])." -j MARK --set-mark ".escapeshellarg($values["leitung"])." -m comment --comment \"Global-Ports: ".escapeshellarg($values["name"])."\"";
+      exec($cmd,$retarr,$retrc);
+    }
+  }
+
+  mysql_query("UPDATE ports SET leitung = '".mysql_real_escape_string($leitung_neu)."' WHERE id = '".$id."' LIMIT 1");
+
+  // Neuer Eintrag wenn noetig
+  if($leitung_neu > 0){
+    if(!empty($values["tcp"])){
+      $cmd = $iptables_cmd." -t mangle -A PREROUTING -m multiport -p tcp --dports ".escapeshellarg($values["tcp"])." -j MARK --set-mark ".escapeshellarg($leitung_neu)." -m comment --comment \"Global-Ports: ".escapeshellarg($values["name"])."\"";
+      exec($cmd,$retarr,$retrc);
+      if($retrc != 0){
+        if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
+        return false;
+      }
+    }
+    if(!empty($values["udp"])){
+      $cmd = $iptables_cmd." -t mangle -A PREROUTING -m multiport -p udp --dports ".escapeshellarg($values["tcp"])." -j MARK --set-mark ".escapeshellarg($leitung_neu)." -m comment --comment \"Global-Ports: ".escapeshellarg($values["name"])."\"";
+      exec($cmd,$retarr,$retrc);
+      if($retrc != 0){
+        if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
+        return false;
       }
     }
   }
   return true;
 }
 
-function iptables_list(){
+// Status, Traffic und Leitungszuordnung aller Freigaben abfragen
+function iptables_list($leitung=false){
   global $iptables_cmd;
-  $cmd = $iptables_cmd." -vn -L FORWARD | grep ACCEPT";
+  if(!$leitung) $cmd = $iptables_cmd." -vn -L FORWARD | grep ACCEPT";
+  else $cmd = $iptables_cmd." -t mangle -n -L PREROUTING | grep MARK";
   exec($cmd,$retarr,$retrc);
-  if($retrc != 0){
+  if(!$leitung && $retrc != 0){
     if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
     return false;
   }
   $array = array();
   foreach($retarr as $line){
     $fields = preg_split("/\s/",$line, -1, PREG_SPLIT_NO_EMPTY);
-    if($fields[2] == "ACCEPT"){
-      $name = $fields[7];
+    if(!$leitung){
+      if($fields[2] == "ACCEPT"){
+        $name = $fields[7];
 
-      if($name == "0.0.0.0/0" && $fields[12] == "/*"){
-        $name = $fields[14];
-        for($i=15; $i<=20; $i++){
-          if($fields[$i] != "*/") $name .= " ".$fields[$i];
-          else break;
+        if($name == "0.0.0.0/0" && $fields[12] == "/*"){
+          $name = $fields[14];
+          for($i=15; $i<=20; $i++){
+            if($fields[$i] != "*/") $name .= " ".$fields[$i];
+            else break;
+          }
         }
+  
+        $traffic[$name] = $fields[1];
+        $array[] = $fields[7];
       }
-
-      $traffic[$name] = $fields[1];
-      $array[] = $fields[7];
+    }else{
+      $name = $fields[3];
+      if($name != "0.0.0.0/0" && preg_match("/MARK set 0x([0-9]*)/",$line,$matches)) $array[$name] = $matches[1];
     }
   }
   return array($array,$traffic);
 }
 
-function ports_add($name){
-  global $iptables_cmd,$global_ports;
+// Testen, ob globale Freischaltung aktiv ist und auf welcher Leitung sie lauft
+function ports_open($id,$leitung=false){
+  global $iptables_cmd;
+  $id = mysql_real_escape_string($id);
+  $values = mysql_fetch_assoc(mysql_query("SELECT * FROM ports WHERE id = '".$id."' LIMIT 1"));
 
-  if(empty($global_ports[$name]["tcp"]) && empty($global_ports[$name]["udp"])) return false;
+  if(empty($values["tcp"]) && empty($values["udp"])) return false;
 
-  if(!empty($global_ports[$name]["tcp"])){
-    $cmd = $iptables_cmd." -I FORWARD -m multiport -p tcp --dports ".$global_ports[$name]["tcp"]." -j ACCEPT -m comment --comment \"Global-Ports: $name\"";
-    exec($cmd,$retarr,$retrc);
-    if($retrc != 0){
-      if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
-      return false;
-    }
-  }
-
-  if(!empty($global_ports[$name]["udp"])){
-    $cmd = $iptables_cmd." -I FORWARD -m multiport -p udp --dports ".$global_ports[$name]["udp"]." -j ACCEPT -m comment --comment \"Global-Ports: $name\"";
-    exec($cmd,$retarr,$retrc);
-    if($retrc != 0){
-      if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
-      return false;
-    }
-  }
-
-  return true;
-}
-
-function ports_del($name){
-  global $iptables_cmd,$global_ports;
-
-  if(empty($global_ports[$name]["tcp"]) && empty($global_ports[$name]["udp"])) return false;
-
-  if(!empty($global_ports[$name]["tcp"])){
-    $cmd = $iptables_cmd." -L FORWARD -n --line-numbers | grep ACCEPT";
-    exec($cmd,$retarr,$retrc);
-    if($retrc != 0){
-      if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
-      return false;
-    }
-    foreach($retarr as $line){
-      $fields = preg_split("/\s/",$line, -1, PREG_SPLIT_NO_EMPTY);
-      if($fields[1] == "ACCEPT" && $fields[4] == "0.0.0.0/0" && $fields[5] == "0.0.0.0/0" && $fields[6] == "multiport" && $fields[7] == "dports"){
-        if($fields[2] == "tcp" && $fields[8] == $global_ports[$name]["tcp"]){
-          $num = $fields[0];
-          if(is_numeric($num)){
-            $cmd = $iptables_cmd." -D FORWARD ".$num;
-            unset($retarr,$retrc);
-            exec($cmd,$retarr,$retrc);
-            if($retrc != 0){
-              if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
-              return false;
-            }
-          }
-        }
-      }
-    }
-  }
-
-  if(!empty($global_ports[$name]["udp"])){
-    $cmd = $iptables_cmd." -L FORWARD -n --line-numbers | grep ACCEPT";
-    exec($cmd,$retarr,$retrc);
-    if($retrc != 0){
-      if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
-      return false;
-    }
-    foreach($retarr as $line){
-      $fields = preg_split("/\s/",$line, -1, PREG_SPLIT_NO_EMPTY);
-      if($fields[1] == "ACCEPT" && $fields[4] == "0.0.0.0/0" && $fields[5] == "0.0.0.0/0" && $fields[6] == "multiport" && $fields[7] == "dports"){
-        if($fields[2] == "udp" && $fields[8] == $global_ports[$name]["udp"]){
-          $num = $fields[0];
-          if(is_numeric($num)){
-            $cmd = $iptables_cmd." -D FORWARD ".$num;
-            unset($retarr,$retrc);
-            exec($cmd,$retarr,$retrc);
-            if($retrc != 0){
-              if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
-              return false;
-            }
-          }
-        }
-      }
-    }
-  }
-  return true;
-}
-
-function ports_open($name){
-  global $iptables_cmd,$global_ports;
-
-  if(empty($global_ports[$name]["tcp"]) && empty($global_ports[$name]["udp"])) return false;
-
-  $cmd = $iptables_cmd." -n -L FORWARD | grep ACCEPT";
+  if(!$leitung) $cmd = $iptables_cmd." -n -L FORWARD | grep ACCEPT";
+  else $cmd = $iptables_cmd." -t mangle -n -L PREROUTING | grep MARK";
   exec($cmd,$retarr,$retrc);
-  if($retrc != 0){
+  if(!$leitung && $retrc != 0){
     if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
     return false;
   }
@@ -195,43 +263,48 @@ function ports_open($name){
   $udp = false;
   foreach($retarr as $line){
     $fields = preg_split("/\s/",$line, -1, PREG_SPLIT_NO_EMPTY);
-    if($fields[0] == "ACCEPT" && $fields[3] == "0.0.0.0/0" && $fields[4] == "0.0.0.0/0" && $fields[5] == "multiport" && $fields[6] == "dports"){
-      if($fields[1] == "tcp" && $fields[7] == $global_ports[$name]["tcp"]) $tcp = true;
-      if($fields[1] == "udp" && $fields[7] == $global_ports[$name]["udp"]) $udp = true;
+    if($fields[3] == "0.0.0.0/0" && $fields[4] == "0.0.0.0/0" && $fields[5] == "multiport" && $fields[6] == "dports"){
+      if($fields[1] == "tcp" && $fields[7] == $values["tcp"]){
+        $tcp = true;
+        if(preg_match("/MARK set 0x([0-9]*)/",$line,$matches)) $line_nr = $matches[1];
+        else $line_nr = 0;
+      }
+      if($fields[1] == "udp" && $fields[7] == $values["udp"]){
+        $udp = true;
+        if(preg_match("/MARK set 0x([0-9]*)/",$line,$matches)) $line_nr = $matches[1];
+        else $line_nr = 0;
+      }
     }
   }
-  if(empty($global_ports[$name]["tcp"])) $tcp = $udp;
-  if(empty($global_ports[$name]["udp"])) $udp = $tcp;
+  if(empty($values["tcp"])) $tcp = $udp;
+  if(empty($values["udp"])) $udp = $tcp;
 
-  return array($tcp,$udp);
+  return array($tcp,$udp,$line_nr);
 }
 
-function rule_list(){
-  global $ip_cmd;
-  $cmd = $ip_cmd." rule show | grep -v local | grep -v main | grep -v default";
-  exec($cmd,$retarr,$retrc);
-  if($retrc != 0){
-    if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
-    return false;
-  }
-  $array = array();
-  foreach($retarr as $line){
-    $fields = preg_split("/\s/",$line, -1, PREG_SPLIT_NO_EMPTY);
-    if(is_numeric(substr($fields[0],0,-1))){
-      $array[$fields[4]][$fields[2]] = substr($fields[3],0,-1);
-    }
-  }
-  return $array;
-}
-
+// IP mit CIDR-Angabe matchen lassen
 function cidr_match($ip, $range){ // http://stackoverflow.com/questions/594112/matching-an-ip-to-a-cidr-mask-in-php5
   if(!preg_match("/\//",$range)) $range .= "/32";
-echo "#".$range."#";
   list ($subnet, $bits) = explode('/', $range);
   $ip = ip2long($ip);
   $subnet = ip2long($subnet);
   $mask = -1 << (32 - $bits);
   $subnet &= $mask; # nb: in case the supplied subnet wasn't correctly aligned
   return ($ip & $mask) == $subnet;
+}
+
+// Einzelnen Port gegen Range matchen lassen
+function port_match($search_port, $range){
+  $ports = explode(",",$range);
+  foreach($ports as $port){
+    if($search_port == $port) return true;
+    if(stristr($port,":")){
+      $tmp = explode(":",$port);
+      for($i=$tmp[0];$i<=$tmp[1];$i++){
+        if($search_port == $i) return true;
+      }
+    }
+  }
+  return false;
 }
 ?>

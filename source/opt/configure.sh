@@ -209,7 +209,7 @@ echo "" >> $PFAD/start.sh
 echo "###################" >> $PFAD/start.sh
 echo "# Forwarding aktivieren" >> $PFAD/start.sh
 echo "###################" >> $PFAD/start.sh
-echo "echo 2 > /proc/sys/net/ipv4/conf/all/rp_filter # Source Routing = loose (alles bekannten Nezte sind erlaubt)" >> $PFAD/start.sh
+#echo "echo 2 > /proc/sys/net/ipv4/conf/all/rp_filter # Source Routing = loose (alles bekannten Nezte sind erlaubt)" >> $PFAD/start.sh
 echo "sysctl -w net.ipv4.ip_forward=1" >> $PFAD/start.sh
 
 # stop.sh erstellen

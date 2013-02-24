@@ -13,6 +13,7 @@ cd $DIR
 for I in `find . -name ".svn"`; do
   rm -rf $I
 done
+chmod u+x mx_router/install.sh
 tar cpzf mx_router.tar.gz mx_router
 
 cd -

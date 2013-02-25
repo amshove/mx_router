@@ -22,7 +22,18 @@ echo "# Deinstalliere resolvconf & appamor (mit funktioniert das ip_forwarding n
 apt-get -y remove apparmor apparmor-utils resolvconf
 
 echo "# Installiere fehlende Pakete"
-apt-get -y install dnsmasq apache2 libapache2-mod-php5 php5-mysql php5 php5-cli mysql-server ntp ethtool conntrack
+PACKAGES="dnsmasq apache2 libapache2-mod-php5 php5-mysql php5 php5-cli mysql-server ntp ethtool conntrack" 
+apt-get -y install $PACKAGES
+
+dpkg -s $PACKAGES > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+  echo "###########################################"
+  echo "# ERROR: Die folgenden Pakete konnten nicht installiert werden"
+  echo "# $PACKAGES"
+  echo "# Bitte das System so konfigurieren, dass diese mit apt-get installiert werden koennen"
+  echo "###########################################"
+  exit 1
+fi
 
 echo "# Erstelle /etc/sysctl.d/99-mx_router.conf"
 cp source/99-mx_router.conf /etc/sysctl.d/99-mx_router.conf
@@ -45,6 +56,7 @@ echo "# Richte /etc/resolv.conf ein"
 DNS1=""
 DNS2="8.8.8.8"
 DOMAIN=""
+echo "####################################"
 read -p "Bitte den DNS-Server fuer das lokale Netz eingeben: " DNS1
 read -p "Domain fuer das lokale Netz: " DOMAIN
 

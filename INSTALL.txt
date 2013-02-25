@@ -17,7 +17,7 @@ iface eth0 inet static
 
 Waehrend der Installation muss der Server Zugriff auf das Internet haben, um Pakete installieren zu koennen. Dazu kannst du DHCP manuell verwenden: sudo dhclient eth0
 - mx_router.tar.gz auf den Server kopieren
-- Datei entpacken: tar xvzf mx_router.tar.gz
+- Datei entpacken: tar xvzf mx_router-*.tar.gz
 - In das Verzeichnis wechseln: cd mx_router
 - Installation starten: sudo ./install.sh
 Das Script deinstalliert resolvconf und apparmor, da diese stoeren wuerden.

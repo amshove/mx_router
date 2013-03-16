@@ -218,6 +218,7 @@ function iptables_list($leitung=false){
     if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
     return false;
   }
+
   $array = array();
   foreach($retarr as $line){
     $fields = preg_split("/\s/",$line, -1, PREG_SPLIT_NO_EMPTY);
@@ -261,6 +262,8 @@ function ports_open($id,$leitung=false){
   }
   $tcp = false;
   $udp = false;
+  $pos = 0;
+  $i = 0;
   foreach($retarr as $line){
     $fields = preg_split("/\s/",$line, -1, PREG_SPLIT_NO_EMPTY);
     if($fields[3] == "0.0.0.0/0" && $fields[4] == "0.0.0.0/0" && $fields[5] == "multiport" && $fields[6] == "dports"){
@@ -268,18 +271,20 @@ function ports_open($id,$leitung=false){
         $tcp = true;
         if(preg_match("/MARK set 0x([0-9]*)/",$line,$matches)) $line_nr = $matches[1];
         else $line_nr = 0;
-      }
-      if($fields[1] == "udp" && $fields[7] == $values["udp"]){
+        $pos = $i;
+      }elseif($fields[1] == "udp" && $fields[7] == $values["udp"]){
         $udp = true;
         if(preg_match("/MARK set 0x([0-9]*)/",$line,$matches)) $line_nr = $matches[1];
         else $line_nr = 0;
+        $pos = $i;
       }
+      $i++;
     }
   }
   if(empty($values["tcp"])) $tcp = $udp;
   if(empty($values["udp"])) $udp = $tcp;
 
-  return array($tcp,$udp,$line_nr);
+  return array($tcp,$udp,$line_nr,$pos);
 }
 
 // IP mit CIDR-Angabe matchen lassen

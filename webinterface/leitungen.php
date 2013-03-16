@@ -15,6 +15,9 @@ if($_SESSION["ad_level"] >= 1){
   $iptables_leitungen = iptables_list(true);
   foreach($iptables_leitungen[0] as $ip => $leitung){
     $ip_status[$leitung][] = $ip;
+
+    if($ip == $local_net) $ip .= " (default)";
+    if($_POST["src"] && cidr_match($_POST["src"],$ip)) $test_ip[$ip] = $leitung;
   }
 
   $port_status = array();
@@ -22,6 +25,8 @@ if($_SESSION["ad_level"] >= 1){
   while($row = mysql_fetch_assoc($query)){
     $tmp = ports_open($row["id"],true);
     $port_status[$tmp[2]][] = $row;
+
+    if($_POST["dport"] && port_match($_POST["dport"],$row[$test_proto])) $test_port[$tmp[3]][$row["name"]] = $tmp[2];
   }
 
   echo "<h3>Zuordnung der Leitungen</h3>";
@@ -37,12 +42,13 @@ if($_SESSION["ad_level"] >= 1){
   echo "  </tr>";
   echo "  <tr>";
   echo "    <th valign='top'>IPs:</th>";
+  $fw_mark_to_leitung = array();
   foreach($leitungen as $leitung){
+    $fw_mark_to_leitung[$leitung["fw_mark"]] = $leitung;
     echo "  <td valign='top'>";
     if($ip_status[$leitung["fw_mark"]]){
       foreach($ip_status[$leitung["fw_mark"]] as $ip){
         if($ip == $local_net) $ip .= " (default)";
-        if($_POST["src"] && cidr_match($_POST["src"],$ip)) $test_ip[$ip] = $leitung["name"];
         echo "$ip<br>";
       }
     }
@@ -55,7 +61,6 @@ if($_SESSION["ad_level"] >= 1){
     echo "  <td valign='top'>";
     if($port_status[$leitung["fw_mark"]]){
       foreach($port_status[$leitung["fw_mark"]] as $ports){
-        if($_POST["dport"] && port_match($_POST["dport"],$ports[$test_proto])) $test_port[$ports["name"]] = $leitung["name"];
         echo "<b>".$ports["name"].":</b><br>T: ".$ports["tcp"]."<br>U: ".$ports["udp"]."<br>";
       }
     }
@@ -69,15 +74,20 @@ if($_SESSION["ad_level"] >= 1){
   if($_POST["src"] || $_POST["dport"]){
     $i=0;
     foreach($test_ip as $ip => $line){
+      $line = $fw_mark_to_leitung[$line]["name"];
       if($i > 0) echo "Die vorherige Regel wird &uuml;berschrieben von: ";
       echo "IP-Regel <b>$ip</b> greift und schickt ".htmlentities($_POST["src"])." auf $line<br>";
       $i++;
     }
     $i=0;
-    foreach($test_port as $name => $line){
-      if($i > 0 || count($test_ip) > 0) echo "Die vorherige Regel wird &uuml;berschrieben von: ";
-      echo "Port-Regel <b>$name</b> greift und schickt alles mit Zielport ".htmlentities($_POST["dport"])." ($test_proto) auf $line<br>";
-      $i++;
+    ksort($test_port);
+    foreach($test_port as $pos){
+      foreach($pos as $name => $line){
+        $line = $fw_mark_to_leitung[$line]["name"];
+        if($i > 0 || count($test_ip) > 0) echo "Die vorherige Regel wird &uuml;berschrieben von: ";
+        echo "Port-Regel <b>$name</b> greift und schickt alles mit Zielport ".htmlentities($_POST["dport"])." ($test_proto) auf $line<br>";
+        $i++;
+      }
     }
     if(count($test_ip) == 0 && count($test_port) == 0) echo "Es wird die default-Leitung verwendet.<br>";
     echo "<br>";

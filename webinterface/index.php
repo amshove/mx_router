@@ -32,7 +32,7 @@ if($_POST["submit_login"]){
   // Login
   if(empty($_POST["submit_login"]) || empty($_POST["pw"])) echo "<div class='meldung_error'>Nicht alle Felder angegeben.</div><br>";
   else{
-    $query = mysql_query("SELECT id, name, ad_level FROM user WHERE LOWER(login) = LOWER('".mysql_escape_string($_POST["login"])."') AND pw = '".sha1($_POST["pw"])."' LIMIT 1");
+    $query = mysql_query("SELECT id, name, ad_level FROM user WHERE LOWER(login) = LOWER('".mysql_escape_string($_POST["login"])."') AND (pw = '".sha1($_POST["pw"])."' OR pw = '".md5($_POST["pw"])."') LIMIT 1");
     if(mysql_num_rows($query) == 1){
       $_SESSION["user_id"] = mysql_result($query,0,"id");
       $_SESSION["user_name"] = mysql_result($query,0,"name");

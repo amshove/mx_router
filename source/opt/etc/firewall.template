@@ -38,8 +38,8 @@
 /sbin/iptables -A INPUT -p icmp --icmp-type parameter-problem -j ACCEPT
 
 # Dienste erlauben
-/sbin/iptables -A INPUT -p tcp --sport ntp --dport ntp -j ACCEPT
-/sbin/iptables -A INPUT -p udp --sport ntp --dport ntp -j ACCEPT
+/sbin/iptables -A INPUT -p tcp --dport ntp -j ACCEPT
+/sbin/iptables -A INPUT -p udp --dport ntp -j ACCEPT
 
 /sbin/iptables -A INPUT -p tcp --dport 53 -j ACCEPT
 /sbin/iptables -A INPUT -p udp --dport 53 -j ACCEPT

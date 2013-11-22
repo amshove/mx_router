@@ -22,7 +22,7 @@ if($client){
   // Internet freischalten lassen
   if($_POST["freischalten"]){
     $reason = "dotlan User: ";
-    if($CURRENT_USER->nick) $reason .= $CURRENT_USER->nick;
+    if($CURRENT_USER->nick) $reason .= urlencode($CURRENT_USER->nick);
     else $reason .= "User not logged in.";
 
     try{

@@ -207,7 +207,7 @@ if($_SERVER["REMOTE_ADDR"] != "127.0.0.1" && (!isset($_SERVER['PHP_AUTH_USER']) 
       global $timeslots, $timeslot_period;
 
       $ip = mysql_real_escape_string($ip);
-      $reason = mysql_real_escape_string($reason);
+      $reason = mysql_real_escape_string(urldecode($reason));
       $used = 0;
       $period_start = time();
       $return = array();

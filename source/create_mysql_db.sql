@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS `history` (
   `del_user` varchar(200) NOT NULL,
   `del_date` varchar(200) NOT NULL,
   `active` tinyint(4) NOT NULL,
+  `tcid` int(11) NOT NULL,
+  `old_id` int(11) NOT NULL,
   `reason` text NOT NULL,
   `traffic` varchar(100) NOT NULL,
   PRIMARY KEY (`id`)

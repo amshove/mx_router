@@ -80,12 +80,9 @@ echo "</select></td>
   <tr>
     <td>Leitungen:</td>
     <td><select name='leitungen[]' size='5' multiple>";
-$leitung_fw = array(); // Array fuer mapping fw_mark -> name
 foreach($leitungen as $leitung){
   if(in_array($leitung["fw_mark"],$value["leitungen"])) $selected = "selected = 'selected'";
   else $selected = "";
-
-  $leitung_fw[$leitung["fw_mark"]] = $leitung["name"];
 
   echo "<option value='".$leitung["fw_mark"]."' $selected>".$leitung["name"]."</option>";
 }
@@ -116,7 +113,7 @@ while($row = mysql_fetch_assoc($query)){
   echo "<tr $class>
     <td valign='top'>".$turniere[$row["turnier_id"]]."</td>
     <td>";
-    foreach(explode(",",$row["leitungen"]) as $fw_mark) echo $leitung_fw[$fw_mark]."<br>";
+    foreach(explode(",",$row["leitungen"]) as $fw_mark) echo $leitungen_fw[$fw_mark]["name"]."<br>";
     echo "</td>
     <td valign='top' align='center'><a href='index.php?page=turniere&cmd=edit&id=".$row["turnier_id"]."'>edit</a> | <a href='index.php?page=turniere&cmd=del&id=".$row["turnier_id"]."' onClick='return confirm(\"Turnier wirklich l&ouml;schen?\");'>del</a></td>
   </tr>";

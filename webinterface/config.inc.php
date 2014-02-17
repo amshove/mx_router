@@ -23,6 +23,9 @@ $timeslot_period = 24;  // nach x Stunden wird der Counter resettet und der User
 $soap_user = "mx_router";              // User fuer die API
 $soap_pw = "--API_PW--"; // PW fuer die API
 
+// Dotlan Zugriff
+#$dotlan_soap = "http://dotlan/admin/projekt/SOAP.php";
+
 // Befehle - muss nicht geaendert werden
 $iptables_cmd = "sudo /sbin/iptables";
 

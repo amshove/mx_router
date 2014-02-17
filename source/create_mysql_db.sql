@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS `history` (
   `reason` text NOT NULL,
   `traffic` varchar(100) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
+);
 
 CREATE TABLE IF NOT EXISTS `ports` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -27,14 +27,14 @@ CREATE TABLE IF NOT EXISTS `ports` (
   `tcp` varchar(200) NOT NULL,
   `udp` varchar(200) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
+);
 
 CREATE TABLE IF NOT EXISTS `timeslots` (
   `ip` varchar(15) CHARACTER SET latin1 NOT NULL,
   `used` tinyint(3) unsigned NOT NULL,
   `period_start` int(10) unsigned NOT NULL,
   PRIMARY KEY (`ip`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+);
 
 CREATE TABLE IF NOT EXISTS `user` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -43,7 +43,13 @@ CREATE TABLE IF NOT EXISTS `user` (
   `name` varchar(200) NOT NULL,
   `ad_level` int(11) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
+);
+
+CREATE TABLE IF NOT EXISTS `turniere` (
+  `turnier_id` int(11) NOT NULL,
+  `leitungen` varchar(200) NOT NULL,
+  PRIMARY KEY (`turnier_id`)
+);
 
 -- Default Admin: admin
 -- Default PW: mx_router

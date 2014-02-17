@@ -1,0 +1,128 @@
+<?php
+#######################################################
+# -------------------- mx_router -------------------- #
+# Copyright (C) Torsten Amshove <torsten@amshove.net> #
+# See: http://www.amshove.net                         #
+#######################################################
+
+if($_SESSION["ad_level"] >= 4){
+
+$soap_client = soap_connect($_SESSION["soap_login"],$_SESSION["soap_pw"]);
+try{
+  $turniere = $soap_client->getTurniere();
+}catch(Exception $e){
+  echo "SOAP ERROR: ".$e->getMessage()."<hr>";
+}
+
+// Wird fuer das Formular verwendet um zwischen add und edit zu unterscheiden
+$submit_name = "add";
+$submit_value = "Hinzuf&uuml;gen";
+$display = "none";
+
+if($_GET["cmd"] == "edit" && is_numeric($_GET["id"]) && !empty($_GET["id"])){
+  // Es wurde auf edit geklickt - hier werden die Daten fuer das Formular eingelesen
+  $submit_name = "edit";
+  $submit_value = "&Auml;ndern";
+  $display = "block";
+  $value = mysql_fetch_assoc(mysql_query("SELECT * FROM turniere WHERE turnier_id = '".mysql_real_escape_string($_GET["id"])."' LIMIT 1"));
+  $value["leitungen"] = explode(",",$value["leitungen"]);
+}elseif($_GET["cmd"] == "del" && is_numeric($_GET["id"]) && !empty($_GET["id"])){
+  // loeschen
+  mysql_query("DELETE FROM turniere WHERE turnier_id = '".mysql_real_escape_string($_GET["id"])."' LIMIT 1");
+}
+
+// Formular wurde abgeschickt
+if($_POST["add"] || $_POST["edit"]){
+  if(count($_POST["leitungen"]) < 1){
+    echo "<div class='meldung_error'>Es muss mindestens eine Leitung ausgesucht werden!</div><br>";
+    $display = "block";
+    $value = $_POST;
+    if($_POST["edit"]){
+      $submit_name = "edit";
+      $submit_value = "&Auml;ndern";
+      $display = "block";
+    }
+  }else{
+    $turnier_id_old = mysql_real_escape_string($_POST["turnier_id_old"]);
+    $turnier_id = mysql_real_escape_string($_POST["turnier_id"]);
+    $leitungen_new = array();
+    foreach($_POST["leitungen"] as $leitung) $leitungen_new[] = mysql_real_escape_string($leitung);
+
+    if($_POST["add"]){
+      mysql_query("INSERT INTO turniere SET turnier_id = '".$turnier_id."', leitungen = '".implode(",",$leitungen_new)."'");
+      echo "<div class='meldung_ok'>Turnier angelegt - bei diesem Turnier taucht wurde der SelfService aktiviert.</div><br>";
+    }elseif($_POST["edit"]){
+      mysql_query("UPDATE turniere SET turnier_id = '".$turnier_id."', leitungen = '".implode(",",$leitungen_new)."' WHERE turnier_id = '".$turnier_id_old."' LIMIT 1");
+      echo "<div class='meldung_ok'>Turnier ge&auml;ndert.</div><br>";
+    }
+  }
+}
+
+// Formular
+echo "<a href='#' onClick='document.getElementById(\"formular\").style.display = \"block\";'>Turnier hinzuf&uuml;gen</a><br>";
+
+echo "<form action='index.php?page=turniere' method='POST' id='formular' style='display: $display;'>
+<input type='hidden' name='turnier_id_old' value='".$value["turnier_id"]."'>
+<table>
+  <tr>
+    <th colspan='2'>&nbsp;</th>
+  </tr>
+  <tr>
+    <td width='50'>Turnier:</td>
+    <td><select name='turnier_id'>";
+foreach($turniere as $tid => $tname){
+  if($tid == $value["turnier_id"]) $selected = "selected = 'selected'";
+  else $selected = "";
+  echo "<option value='$tid' $selected>$tname</option>";
+}
+echo "</select></td>
+  </tr>
+  <tr>
+    <td>Leitungen:</td>
+    <td><select name='leitungen[]' size='5' multiple>";
+$leitung_fw = array(); // Array fuer mapping fw_mark -> name
+foreach($leitungen as $leitung){
+  if(in_array($leitung["fw_mark"],$value["leitungen"])) $selected = "selected = 'selected'";
+  else $selected = "";
+
+  $leitung_fw[$leitung["fw_mark"]] = $leitung["name"];
+
+  echo "<option value='".$leitung["fw_mark"]."' $selected>".$leitung["name"]."</option>";
+}
+echo "</select></td>
+  </tr>
+  <tr>
+    <td colspan='2' align='center'><input type='submit' name='".$submit_name."' value='".$submit_value."'></td>
+  </tr>
+</table>
+</form>";
+
+echo "<br><br>";
+
+// Tabelle
+echo "<table class='hover_row'>
+  <tr>
+    <th width='400'>Name</th>
+    <th width='200'>Leitungen</th>
+    <th width='70'>&nbsp;</th>
+  </tr>";
+
+
+$i=0;
+$query = mysql_query("SELECT * FROM turniere");
+while($row = mysql_fetch_assoc($query)){
+  if(($i % 2) > 0) $class = "class='odd_row'";
+  else $class = "";
+  echo "<tr $class>
+    <td valign='top'>".$turniere[$row["turnier_id"]]."</td>
+    <td>";
+    foreach(explode(",",$row["leitungen"]) as $fw_mark) echo $leitung_fw[$fw_mark]."<br>";
+    echo "</td>
+    <td valign='top' align='center'><a href='index.php?page=turniere&cmd=edit&id=".$row["turnier_id"]."'>edit</a> | <a href='index.php?page=turniere&cmd=del&id=".$row["turnier_id"]."' onClick='return confirm(\"Turnier wirklich l&ouml;schen?\");'>del</a></td>
+  </tr>";
+  $i++;
+}
+
+echo "</table>";
+}
+?>

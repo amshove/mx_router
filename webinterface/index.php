@@ -49,6 +49,8 @@ if($_POST["submit_login"]){
           if($rights["view"]){
             $logged_in = true;
             $_SESSION["user_name"] = $me["nick"];
+            $_SESSION["soap_login"] = $_POST["login"];
+            $_SESSION["soap_pw"] = $_POST["pw"];
             if($rights["admin"]) $_SESSION["ad_level"] = 4;
             else $_SESSION["ad_level"] = 3;
           }
@@ -113,6 +115,7 @@ if(!$logged_in){
   echo " | <a class='navi' href='index.php?page=selfservice'>Selfservice</a>";
   echo " | <a class='navi' href='index.php?page=leitungen'>Leitungen</a>";
   if($_SESSION["ad_level"] >= 4) echo " | <a class='navi' href='index.php?page=ports'>Ports</a>";
+  if($_SESSION["ad_level"] >= 4) echo " | <a class='navi' href='index.php?page=turniere'>Turniere</a>";
   if($_SESSION["ad_level"] >= 5) echo " | <a class='navi' href='index.php?page=user'>User administrieren</a>";
   echo " | <a class='navi' href='index.php?logout=true'>Logout</a>";
   echo " | Aktueller User: ".$_SESSION["user_name"];
@@ -123,6 +126,7 @@ if(!$logged_in){
     case "selfservice": include("selfservice.php"); break;
     case "leitungen": include("leitungen.php"); break;
     case "ports": include("ports.php"); break;
+    case "turniere": include("turniere.php"); break;
     case "user": include("user.php"); break;
     default: include("home.php"); break;
   }

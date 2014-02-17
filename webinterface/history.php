@@ -12,17 +12,20 @@ if($_SESSION["ad_level"] >= 1){
 
   echo "<h3>Alte Freigaben</h3>";
   if($_SESSION["ad_level"] >= 5) echo "<a onClick='return confirm(\"History wirklich leeren?\");' href='index.php?page=history&cmd=clean'>alle l&ouml;schen</a>";
-  echo "<table class='hover_row'>";
+  echo "<table class='hover_row sortierbar'>";
+  echo "  <thead>";
   echo "  <tr>";
-  echo "    <th width='100'>IP</th>";
-  echo "    <th width='150'>Grund</th>";
-  echo "    <th width='130'>Angelegt von</th>";
-  echo "    <th width='130'>Angelegt um</th>";
-  echo "    <th width='130'>Gel&ouml;scht von</th>";
-  echo "    <th width='130'>Gel&ouml;scht um</th>";
-  echo "    <th width='100'>Zeitraum</th>";
-  echo "    <th width='80'>Traffic</th>";
+  echo "    <th class='sortierbar' width='100'>IP</th>";
+  echo "    <th class='sortierbar' width='150'>Grund</th>";
+  echo "    <th class='sortierbar' width='130'>Angelegt von</th>";
+  echo "    <th class='sortierbar' width='130'>Angelegt um</th>";
+  echo "    <th class='sortierbar' width='130'>Gel&ouml;scht von</th>";
+  echo "    <th class='sortierbar' width='130'>Gel&ouml;scht um</th>";
+  echo "    <th class='sortierbar' width='100'>Zeitraum</th>";
+  echo "    <th class='sortierbar' width='80'>Traffic</th>";
   echo "  </tr>";
+  echo "  </thead>";
+  echo "  <tbody>";
   $i=0;
   $query = mysql_query("SELECT * FROM history WHERE active < 1 ORDER BY del_date DESC");
   while($row = mysql_fetch_assoc($query)){
@@ -49,6 +52,7 @@ if($_SESSION["ad_level"] >= 1){
     echo "</tr>";
     $i++;
   }
+  echo "  </tbody>";
   echo "</table>";
 }
 ?>

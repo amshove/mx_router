@@ -24,6 +24,7 @@ if($_GET["logout"]){
   <title>Router Webinterface</title>
   <link rel="SHORTCUT ICON" href="favicon.ico" type="image/x-icon">
   <link rel="stylesheet" type="text/css" href="style.css" />
+  <script type="text/javascript" src="TableSort.js"></script>
 </head>
 <body>
 

@@ -13,15 +13,18 @@ if($_SESSION["ad_level"] >= 1){
 
   echo "<h3>&Uuml;bersicht der SelfService-Kontingente</h3>";
   echo "Kontingent pro IP: $timeslots Min<br>Reset nach: $timeslot_period Std";
-  echo "<table>";
+  echo "<table class='sortierbar'>";
+  echo "  <thead>";
   echo "  <tr>";
-  echo "    <th width='100'>IP</th>";
-  echo "    <th width='130'>DNS</th>";
-  echo "    <th width='50'>Used</th>";
-  echo "    <th width='50'>Free</th>";
-  echo "    <th width='100'>Reset des Kont.</th>";
+  echo "    <th class='sortierbar' width='100'>IP</th>";
+  echo "    <th class='sortierbar' width='130'>DNS</th>";
+  echo "    <th class='sortierbar' width='50'>Used</th>";
+  echo "    <th class='sortierbar' width='50'>Free</th>";
+  echo "    <th class='sortierbar' width='100'>Reset des Kont.</th>";
   if($_SESSION["ad_level"] >= 4) echo "    <th width='30'>&nbsp;</th>";
   echo "  </tr>";
+  echo "  </thead>";
+  echo "  <tbody>";
   $i=0;
   $query = mysql_query("SELECT * FROM timeslots ORDER BY INET_ATON(ip)");
   while($row = mysql_fetch_assoc($query)){
@@ -38,6 +41,7 @@ if($_SESSION["ad_level"] >= 1){
     echo "</tr>";
     $i++;
   }
+  echo "  </tbody>";
   echo "</table>";
 }
 ?>

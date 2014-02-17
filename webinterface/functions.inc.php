@@ -18,7 +18,7 @@ mysql_select_db($mysql_db) or die(mysql_error());
 
 // Session starten
 session_start();
-if(!empty($_SESSION["user_id"])) $logged_in = true;
+if(!empty($_SESSION["user_name"])) $logged_in = true;
 else $logged_in = false;
 
 // Status der Leitungen testen
@@ -311,5 +311,20 @@ function port_match($search_port, $range){
     }
   }
   return false;
+}
+
+############ SOAP-Client #############
+// Verbindung herstellen
+function soap_connect($user,$pw){
+  global $dotlan_soap;
+
+  if(empty($dotlan_soap)) return false;
+
+  try{
+    $client = new SoapClient($dotlan_soap."?wsdl",array("login"=>$user,"password"=>$pw,"user_agent"=>"mx_router","encoding"=>"ISO-8859-1"));
+    return $client;
+  }catch(Exception $e){
+    die("SOAP ERROR: ".$e->getMessage());
+  }
 }
 ?>

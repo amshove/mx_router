@@ -111,18 +111,14 @@ echo "<table class='hover_row'>
     <th width='70'>&nbsp;</th>
   </tr>";
 
-$i=0;
 $query = mysql_query("SELECT * FROM ports ORDER BY name");
 while($row = mysql_fetch_assoc($query)){
-  if(($i % 2) > 0) $class = "class='odd_row'";
-  else $class = "";
-  echo "<tr $class>
+  echo "<tr>
     <td>".$row["name"]."</td>
     <td>".$row["tcp"]."</td>
     <td>".$row["udp"]."</td>
     <td align='center'><a href='index.php?page=ports&cmd=edit&id=".$row["id"]."'>edit</a> | <a href='index.php?page=ports&cmd=del&id=".$row["id"]."' onClick='return confirm(\"Ports wirklich l&ouml;schen?\");'>del</a></td>
   </tr>";
-  $i++;
 }
 
 echo "</table>";

@@ -26,12 +26,9 @@ if($_SESSION["ad_level"] >= 1){
   echo "  </tr>";
   echo "  </thead>";
   echo "  <tbody>";
-  $i=0;
   $query = mysql_query("SELECT * FROM history WHERE active < 1 ORDER BY del_date DESC");
   while($row = mysql_fetch_assoc($query)){
-    echo "<tr";
-    if(($i % 2) > 0) echo " class='odd_row'";
-    echo ">";
+    echo "<tr>";
     echo "  <td valign='top'>".$row["ip"]."</td>";
     echo "  <td valign='top'>".nl2br($row["reason"])."</td>";
     echo "  <td valign='top'>".$row["add_user"]."</td>";
@@ -43,14 +40,13 @@ if($_SESSION["ad_level"] >= 1){
     else{
       $time = ($row["end_date"]-$row["add_date"])/60;
       $h = floor($time/60);
-      $min = $time - ($h*60);
+      $min = round($time - ($h*60));
       if(!empty($h)) echo "$h std";
       if(!empty($min)) echo " $min min";
     }
     echo "  </td>";
     echo "  <td valign='top' align='center'>".$row["traffic"]."</td>";
     echo "</tr>";
-    $i++;
   }
   echo "  </tbody>";
   echo "</table>";

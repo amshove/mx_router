@@ -69,9 +69,9 @@ h3 {
 }
 
 table.hover_row tr:hover {
-  background-color: #d1d0f8;
+  background-color: #d1d0f8 !important;
 }
 
-.odd_row {
+table.hover_row tr:nth-child(odd) {
   background-color: #F0F0F0;
 }

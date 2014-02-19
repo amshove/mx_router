@@ -104,20 +104,15 @@ echo "<table class='hover_row'>
     <th width='70'>&nbsp;</th>
   </tr>";
 
-
-$i=0;
 $query = mysql_query("SELECT * FROM turniere");
 while($row = mysql_fetch_assoc($query)){
-  if(($i % 2) > 0) $class = "class='odd_row'";
-  else $class = "";
-  echo "<tr $class>
+  echo "<tr>
     <td valign='top'>".$turniere[$row["turnier_id"]]."</td>
     <td>";
     foreach(explode(",",$row["leitungen"]) as $fw_mark) echo $leitungen_fw[$fw_mark]["name"]."<br>";
     echo "</td>
     <td valign='top' align='center'><a href='index.php?page=turniere&cmd=edit&id=".$row["turnier_id"]."'>edit</a> | <a href='index.php?page=turniere&cmd=del&id=".$row["turnier_id"]."' onClick='return confirm(\"Turnier wirklich l&ouml;schen?\");'>del</a></td>
   </tr>";
-  $i++;
 }
 
 echo "</table>";

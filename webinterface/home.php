@@ -206,12 +206,10 @@ if($_SESSION["ad_level"] >= 1){
   echo "  <tbody>";
 
   $error = false;
-  $i = 0;
   $query = mysql_query("SELECT * FROM history WHERE active = 1 ORDER BY INET_ATON(ip)");
   while($row = mysql_fetch_assoc($query)){ 
     $dns = @gethostbyaddr($row["ip"]);
     echo "<tr";
-    if(($i % 2) > 0) echo " class='odd_row'";
     if(!in_array($row["ip"],$iptables_ips)){ echo " style='background-color: #CC9999;'"; $error = true; }
     echo ">";
     echo "  <td valign='top'><input type='checkbox' name='id[]' value='".$row["id"]."' style='margin: 0px;'></td>";
@@ -233,7 +231,6 @@ if($_SESSION["ad_level"] >= 1){
     echo "  </select></td>";
     echo "  <td valign='top'><a onClick='return confirm(\"Freigabe f&uuml;r ".$row["ip"]." wirklich l&ouml;schen?\");' href='index.php?cmd=del&id=".$row["id"]."'>del</a></td>";
     echo "</tr>";
-    $i++;
   }
   echo "  </tbody>";
   echo "</table>";

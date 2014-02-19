@@ -99,18 +99,14 @@ echo "<table class='hover_row'>
     <th width='150'>&nbsp;</th>
   </tr>";
 
-$i=0;
 $query = mysql_query("SELECT id, login, name, ad_level FROM user ORDER BY login");
 while($row = mysql_fetch_assoc($query)){
-  if(($i % 2) > 0) $class = "class='odd_row'";
-  else $class = "";
-  echo "<tr $class>
+  echo "<tr>
     <td>".$row["login"]."</td>
     <td>".$row["name"]."</td>
     <td>".$ad_level[$row["ad_level"]]."</td>
     <td align='center'><a href='index.php?page=user&cmd=edit&id=".$row["id"]."'>edit</a> | <a href='index.php?page=user&cmd=pw&id=".$row["id"]."'>reset PW</a> | <a href='index.php?page=user&cmd=del&id=".$row["id"]."' onClick='return confirm(\"User wirklich l&ouml;schen?\");'>del</a></td>
   </tr>";
-  $i++;
 }
 
 echo "</table>";

@@ -34,6 +34,8 @@ function rule_add($id){
   $id = mysql_real_escape_string($id);
   $values = mysql_fetch_assoc(mysql_query("SELECT * FROM history WHERE id = '".$id."' LIMIT 1"));
 
+  if(mysql_num_rows(mysql_query("SELECT id FROM history WHERE ip = '".$values["ip"]."' AND active = 1 LIMIT 1")) > 0) return false; // Keine doppelten Freischaltungen
+
   if($values["ip"]){
     $cmd = $iptables_cmd." -A FORWARD --source ".escapeshellarg($values["ip"])." -j ACCEPT";
     exec($cmd,$retarr,$retrc);
@@ -66,7 +68,8 @@ function rule_del($id,$del_user){
     exec($cmd,$retarr,$retrc);
     if($retrc != 0){
       if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
-      return false;
+      $tmp = iptables_list();
+      if($tmp[1][$values["ip"]]) return false; // Existiert Regel noch?
     }
 
     mysql_query("UPDATE history SET active = 0, del_user = '".$del_user."', del_date = '".time()."', traffic = '".$iptables_traffic[$values["ip"]]."' WHERE id = '".$id."' LIMIT 1");

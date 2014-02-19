@@ -157,9 +157,9 @@ if($client && !empty($_GET["tcid"]) && is_numeric($_GET["tcid"])){
         }
       }elseif(is_array($status)){
         $output .= "<div style='padding-top: 5px; padding-left: 5px;'>";
-        $output .= "<b>Folgende IPs sind freigeschaltet und laufen auf der genannten Leitung:</b><br>";
+        $output .= "<b>Folgende IPs sind freigeschaltet und laufen auf der gleichen Leitung:</b><br>";
         foreach($status as $ip => $leitung){
-          $output .= "  ".$ip.": ".$leitung."<br>";
+          $output .= "  ".$ip."<br>";
         }
         $output .= "<br><b>Die Freischaltung wird automatisch entfernt, sobald das <a href='/turnier/?do=contest&id=".$_GET["tcid"]."'>Ergebnis</a> eingetragen wurde.</b>";
         $output .= "</div>";

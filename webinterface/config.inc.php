@@ -25,9 +25,14 @@ $soap_pw = "--API_PW--"; // PW fuer die API
 
 // Dotlan Zugriff
 #$dotlan_soap = "http://dotlan/admin/projekt/SOAP.php";
+#$soap_secret = "";
 
 // Befehle - muss nicht geaendert werden
 $iptables_cmd = "sudo /sbin/iptables";
 
 setlocale(LC_ALL, 'de_DE@euro', 'de_DE.utf8', 'de_DE', 'de', 'ge');
+
+// Dreht das Leitungs-Array um -> Key: fw_mark
+$leitungen_fw = array();
+foreach($leitungen as $leitung) $leitungen_fw[$leitung["fw_mark"]] = $leitung;
 ?>

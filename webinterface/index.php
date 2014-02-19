@@ -23,6 +23,9 @@ if($_GET["logout"]){
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
   <title>Router Webinterface</title>
   <link rel="SHORTCUT ICON" href="favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="css/smoothness/jquery-ui-1.10.4.custom.css">
+  <script src="js/jquery-1.10.2.js"></script>
+  <script src="js/jquery-ui-1.10.4.custom.min.js"></script>
   <link rel="stylesheet" type="text/css" href="style.css" />
   <script type="text/javascript" src="TableSort.js"></script>
 </head>
@@ -51,6 +54,10 @@ if($_POST["submit_login"]){
             $_SESSION["user_name"] = $me["nick"];
             if($rights["admin"]) $_SESSION["ad_level"] = 4;
             else $_SESSION["ad_level"] = 3;
+
+            // User-Liste holen fuer User-Suche
+            $users = $soap_client->getUserIps();
+            $_SESSION["users"] = $users;
           }
         }catch(Exception $e){ }
       }

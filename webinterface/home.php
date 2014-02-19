@@ -82,6 +82,23 @@ if($_SESSION["ad_level"] >= 1){
   echo "<table style='border: 0px;'>";
   echo "  <tr><td valing='top'>";
 
+  if($_SESSION["users"]){
+    echo " <script>
+    $(function() {
+      var availableTags = [";
+    foreach($_SESSION["users"] as $user) echo "{label: '".str_replace("'","\\'",$user["nick"]." (".$user["vorname"]." ".$user["nachname"].") ".$user["sitz_nr"])."', ip: '".$user["ip"]."'},";
+    echo "  ];
+      $( '#search' ).autocomplete({
+        source: availableTags,
+        select: function( event, ui ) {
+          $('#ip').val(ui.item.ip);
+        }
+      })._renderItem = function( ul, item ) {
+        return item.label;
+      };
+    });
+    </script>";
+  }
   echo "<h3>Neue Freigabe erteilen</h3>";
   echo "<form action='index.php' method='POST'>";
   echo "<table>";
@@ -90,7 +107,19 @@ if($_SESSION["ad_level"] >= 1){
   echo "  </tr>";
   echo "  <tr>";
   echo "    <td>IP:</td>";
-  echo "    <td><input type='text' name='ip'></td>";
+  echo "    <td><input type='text' name='ip' id='ip'></td>";
+  echo "  </tr>";
+  if($_SESSION["users"]){
+    echo "<tr>";
+    echo "  <td colspan='2' align='center'><b>oder</b></td>";
+    echo "</tr>";
+    echo "<tr>";
+    echo "  <td>User:</td>";
+    echo "  <td><input type='text' id='search'></td>";
+    echo "</tr>";
+  }
+  echo "  <tr>";
+  echo "    <td colspan='2' align='center'>&nbsp;</td>";
   echo "  </tr>";
   echo "  <tr>";
   echo "    <td>Wie lange?</td>";

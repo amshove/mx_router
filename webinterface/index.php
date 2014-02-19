@@ -49,8 +49,6 @@ if($_POST["submit_login"]){
           if($rights["view"]){
             $logged_in = true;
             $_SESSION["user_name"] = $me["nick"];
-            $_SESSION["soap_login"] = $_POST["login"];
-            $_SESSION["soap_pw"] = $_POST["pw"];
             if($rights["admin"]) $_SESSION["ad_level"] = 4;
             else $_SESSION["ad_level"] = 3;
           }

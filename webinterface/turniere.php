@@ -7,7 +7,7 @@
 
 if($_SESSION["ad_level"] >= 4){
 
-$soap_client = soap_connect($_SESSION["soap_login"],$_SESSION["soap_pw"]);
+$soap_client = soap_connect("mx_router",$soap_secret);
 try{
   $turniere = $soap_client->getTurniere();
 }catch(Exception $e){

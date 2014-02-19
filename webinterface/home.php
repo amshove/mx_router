@@ -222,7 +222,7 @@ if($_SESSION["ad_level"] >= 1){
   echo "  <thead>";
   echo "  <tr>";
   echo "    <th width='10'><input type='checkbox' id='chk_all' onClick='select_all();' style='margin: 0px;'></th>";
-  echo "    <th class='sortierbar' width='100'>IP</th>";
+  echo "    <th class='sortierbar vorsortiert+' width='100'>IP</th>";
   echo "    <th class='sortierbar' width='130'>DNS</th>";
   echo "    <th class='sortierbar' width='80'>Traffic</th>";
   echo "    <th class='sortierbar' width='200'>Grund</th>";

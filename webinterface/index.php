@@ -26,8 +26,8 @@ if($_GET["logout"]){
   <link rel="stylesheet" href="css/smoothness/jquery-ui-1.10.4.custom.css">
   <script src="js/jquery-1.10.2.js"></script>
   <script src="js/jquery-ui-1.10.4.custom.min.js"></script>
-  <link rel="stylesheet" type="text/css" href="style.css" />
-  <script type="text/javascript" src="TableSort.js"></script>
+  <link rel="stylesheet" type="text/css" href="css/style.css" />
+  <script type="text/javascript" src="js/TableSort.js"></script>
 </head>
 <body>
 

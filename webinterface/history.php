@@ -20,7 +20,7 @@ if($_SESSION["ad_level"] >= 1){
   echo "    <th class='sortierbar' width='130'>Angelegt von</th>";
   echo "    <th class='sortierbar' width='130'>Angelegt um</th>";
   echo "    <th class='sortierbar' width='130'>Gel&ouml;scht von</th>";
-  echo "    <th class='sortierbar' width='130'>Gel&ouml;scht um</th>";
+  echo "    <th class='sortierbar vorsortiert-' width='130'>Gel&ouml;scht um</th>";
   echo "    <th class='sortierbar' width='100'>Zeitraum</th>";
   echo "    <th class='sortierbar' width='80'>Traffic</th>";
   echo "  </tr>";

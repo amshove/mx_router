@@ -16,7 +16,7 @@ if($_SESSION["ad_level"] >= 1){
   echo "<table class='sortierbar'>";
   echo "  <thead>";
   echo "  <tr>";
-  echo "    <th class='sortierbar' width='100'>IP</th>";
+  echo "    <th class='sortierbar vorsortiert+' width='100'>IP</th>";
   echo "    <th class='sortierbar' width='130'>DNS</th>";
   echo "    <th class='sortierbar' width='50'>Used</th>";
   echo "    <th class='sortierbar' width='50'>Free</th>";

@@ -155,7 +155,7 @@ function ports_del($id){
   }
 
   if(!empty($values["udp"])){
-    $cmd = $iptables_cmd." -D FORWARD -m multiport -p udp --dports ".escapeshellarg($values["tcp"])." -j ACCEPT -m comment --comment \"Global-Ports: ".escapeshellarg($values["name"])."\"";
+    $cmd = $iptables_cmd." -D FORWARD -m multiport -p udp --dports ".escapeshellarg($values["udp"])." -j ACCEPT -m comment --comment \"Global-Ports: ".escapeshellarg($values["name"])."\"";
     exec($cmd,$retarr,$retrc);
     if($retrc != 0){
       if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";

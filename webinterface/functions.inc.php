@@ -327,7 +327,8 @@ function soap_connect($user,$pw){
     $client = new SoapClient($dotlan_soap."?wsdl",array("login"=>$user,"password"=>$pw,"user_agent"=>"mx_router","encoding"=>"ISO-8859-1"));
     return $client;
   }catch(Exception $e){
-    die("SOAP ERROR: ".$e->getMessage());
+    echo "SOAP ERROR: ".$e->getMessage();
+    return false;
   }
 }
 ?>

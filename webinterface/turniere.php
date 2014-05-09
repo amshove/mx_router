@@ -50,7 +50,7 @@ if($_POST["add"] || $_POST["edit"]){
 
     if($_POST["add"]){
       mysql_query("INSERT INTO turniere SET turnier_id = '".$turnier_id."', leitungen = '".implode(",",$leitungen_new)."'");
-      echo "<div class='meldung_ok'>Turnier angelegt - bei diesem Turnier taucht wurde der SelfService aktiviert.</div><br>";
+      echo "<div class='meldung_ok'>Turnier angelegt - bei diesem Turnier wurde der SelfService aktiviert.</div><br>";
     }elseif($_POST["edit"]){
       mysql_query("UPDATE turniere SET turnier_id = '".$turnier_id."', leitungen = '".implode(",",$leitungen_new)."' WHERE turnier_id = '".$turnier_id_old."' LIMIT 1");
       echo "<div class='meldung_ok'>Turnier ge&auml;ndert.</div><br>";

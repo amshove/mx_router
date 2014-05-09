@@ -11,7 +11,7 @@ require($path."/functions.inc.php");
 
 $query = mysql_query("SELECT id FROM history WHERE active = 1");
 while($row = mysql_fetch_assoc($query)){
-  rule_add($row["id"]);
+  rule_add($row["id"],true);
 }
 
 $query = mysql_query("SELECT id, active, leitung FROM ports");

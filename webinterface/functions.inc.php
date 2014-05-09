@@ -29,12 +29,12 @@ function ping($ip, $eth = ""){
 }
 
 // FW-Freischaltung anlegen
-function rule_add($id){
+function rule_add($id,$restore = false){
   global $iptables_cmd;
   $id = mysql_real_escape_string($id);
   $values = mysql_fetch_assoc(mysql_query("SELECT * FROM history WHERE id = '".$id."' LIMIT 1"));
 
-  if(mysql_num_rows(mysql_query("SELECT id FROM history WHERE ip = '".$values["ip"]."' AND active = 1 LIMIT 1")) > 0) return false; // Keine doppelten Freischaltungen
+  if(!$restore && mysql_num_rows(mysql_query("SELECT id FROM history WHERE ip = '".$values["ip"]."' AND active = 1 LIMIT 1")) > 0) return false; // Keine doppelten Freischaltungen
 
   if($values["ip"]){
     $cmd = $iptables_cmd." -A FORWARD --source ".escapeshellarg($values["ip"])." -j ACCEPT";

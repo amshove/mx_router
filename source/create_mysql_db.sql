@@ -61,6 +61,7 @@ INSERT INTO `user` (`login`, `pw`, `name`, `ad_level`) VALUES
 INSERT INTO `ports` (`name`, `active`, `leitung`, `tcp`, `udp`) VALUES
 ('Steam', 0, 0, '27014:27050', '27000:27030,4380,1500,3005,3101,28960'),
 ('Starcraft II', 0, 0, '1119', '1119'),
+('Hearthstone', 0, 0, '1119,3724', '1119,3724'),
 ('ICQ', 0, 0, '5190', ''),
 ('CoD MW3', 0, 0, '3074,27000:27050', '3074,8766'),
 ('Xfire', 0, 0, '25999', ''),

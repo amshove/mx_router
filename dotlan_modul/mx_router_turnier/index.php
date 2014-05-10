@@ -8,7 +8,7 @@
 include_once("../global.php");
 
 // Config
-$api_ip = "192.168.2.180";            // IP des routers
+$api_ip = "10.10.1.1";            // IP des routers
 $api_user = "mx_router";              // $soap_user aus config.inc.php auf dem mx_router 
 $api_pw = "";                         // $soap_pw aus config.inc.php auf dem mx_router
 
@@ -117,7 +117,7 @@ if($client && !empty($_GET["tcid"]) && is_numeric($_GET["tcid"])){
   
         // IPs raussuchen
         $ips = array();
-        $query = mysql_query("SELECT sitz_nr FROM event_teilnehmer WHERE user_id IN (".implode(",",$allowed_users).")");
+        $query = mysql_query("SELECT sitz_nr FROM event_teilnehmer WHERE event_id = '$event_id' AND user_id IN (".implode(",",$allowed_users).")");
         while($row = mysql_fetch_assoc($query)){
           if(preg_match("/([A-HV])\-([0-9][0-9]?)$/",$row['sitz_nr'],$matches) && $matches[1] && $matches[2]){
             $block = $matches[1];

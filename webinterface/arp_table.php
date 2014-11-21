@@ -34,7 +34,7 @@ if($_SESSION["ad_level"] >= 4){
     echo "  <td valign='top'>".$row["ip"]."</td>";
     echo "  <td valign='top'>".$row["mac"]."</td>";
     echo "  <td valign='top' align='center'>".$row["interface"]."</td>";
-    echo "  <td valign='top' align='center'>".strftime("%a, %R Uhr",$row["last_seen"])."</td>";
+    echo "  <td valign='top' align='center'>".$row["last_seen"]."</td>";
     echo "</tr>";
   }
   echo "  </tbody>";
@@ -62,7 +62,7 @@ if($_SESSION["ad_level"] >= 4){
     echo "  <td valign='top'>".$row["ip"]."</td>";
     echo "  <td valign='top'>".$row["mac"]."</td>";
     echo "  <td valign='top' align='center'>".$row["interface"]."</td>";
-    echo "  <td valign='top' align='center'>".strftime("%a, %R Uhr",$row["last_seen"])."</td>";
+    echo "  <td valign='top' align='center'>".$row["last_seen"]."</td>";
     echo "</tr>";
   }
   echo "  </tbody>";
@@ -86,7 +86,7 @@ if($_SESSION["ad_level"] >= 4){
     echo "  <td valign='top'>".$row["ip"]."</td>";
     echo "  <td valign='top'>".$row["mac"]."</td>";
     echo "  <td valign='top' align='center'>".$row["interface"]."</td>";
-    echo "  <td valign='top' align='center'>".strftime("%a, %R Uhr",$row["last_seen"])."</td>";
+    echo "  <td valign='top' align='center'>".$row["last_seen"]."</td>";
     echo "</tr>";
   }
   echo "  </tbody>";

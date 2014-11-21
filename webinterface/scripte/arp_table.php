@@ -18,7 +18,7 @@ foreach(explode("\n",$arp_table) as $line){
   $mac = $fields[3];
   $interface = $fields[6];
 
-  if(!empty($ip) && !empty($mac) && !empty($interface) && preg_match("/^[0-9.]*$/",$ip) && preg_match("/^[0-9a-f:]$/",$mac))
+  if(!empty($ip) && !empty($mac) && !empty($interface))
     mysql_query("INSERT INTO arp_table SET ip = '$ip', mac = '$mac', interface = '$interface', last_seen = NOW() ON DUPLICATE KEY UPDATE last_seen = NOW()");
 }
 ?>

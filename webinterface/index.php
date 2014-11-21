@@ -121,6 +121,7 @@ if(!$logged_in){
   echo " | <a class='navi' href='index.php?page=leitungen'>Leitungen</a>";
   if($_SESSION["ad_level"] >= 4) echo " | <a class='navi' href='index.php?page=ports'>Ports</a>";
   if($_SESSION["ad_level"] >= 4) echo " | <a class='navi' href='index.php?page=turniere'>Turniere</a>";
+  if($_SESSION["ad_level"] >= 4) echo " | <a class='navi' href='index.php?page=arp_table'>ARP Tabelle</a>";
   if($_SESSION["ad_level"] >= 5) echo " | <a class='navi' href='index.php?page=user'>User administrieren</a>";
   echo " | <a class='navi' href='index.php?logout=true'>Logout</a>";
   echo " | Aktueller User: ".$_SESSION["user_name"];
@@ -132,6 +133,7 @@ if(!$logged_in){
     case "leitungen": include("leitungen.php"); break;
     case "ports": include("ports.php"); break;
     case "turniere": include("turniere.php"); break;
+    case "arp_table": include("arp_table.php"); break;
     case "user": include("user.php"); break;
     default: include("home.php"); break;
   }

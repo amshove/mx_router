@@ -4,6 +4,14 @@
 -- # See: http://www.amshove.net                         #
 -- #######################################################
 
+CREATE TABLE IF NOT EXISTS `arp_table` (
+  `ip` varchar(15) NOT NULL,
+  `mac` varchar(17) NOT NULL,
+  `interface` varchar(6) NOT NULL,
+  `last_seen` datetime NOT NULL,
+  PRIMARY KEY (`ip`,`mac`,`interface`)
+);
+
 CREATE TABLE IF NOT EXISTS `history` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `ip` varchar(200) NOT NULL,

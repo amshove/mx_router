@@ -127,6 +127,9 @@ echo "# Lege crontab-Eintrag an"
 echo "" >> /etc/crontab
 echo "# mx_router: Loeschen der zeitlich begrenzten Regeln" >> /etc/crontab
 echo "*/1 *   * * *   root    /usr/bin/php /var/www/scripte/del_rules.php > /dev/null 2>&1" >> /etc/crontab
+echo "" >> /etc/crontab
+echo "# mx_router: Fuellen der statischen ARP-Tabelle" >> /etc/crontab
+echo "*/1 *   * * *   root    /usr/bin/php /var/www/scripte/arp_table.php > /dev/null 2>&1" >> /etc/crontab
 
 echo "###################################"
 echo "# Richte Scripte ein"

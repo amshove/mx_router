@@ -32,6 +32,7 @@ echo -e "\033[35meth0\033[5G | $IP \033[23G | $NET \033[44G | $GW \033[62G | \03
 
 for ETH in `ifconfig | grep ^eth | grep -v eth0 | cut -d " " -f 1`; do
   I=0
+  ETH_SHOW=$ETH
   for IP_NET in `ip addr show $ETH | grep inet | tr -s ' ' | cut -d ' ' -f 3`; do
     IP=`echo $IP_NET | cut -d / -f 1`
     NET=`ip route | grep $ETH | grep link | grep $IP | grep -v default | cut -d " " -f 1` # Sowas wie 10.10.0.0/20
@@ -55,10 +56,10 @@ for ETH in `ifconfig | grep ^eth | grep -v eth0 | cut -d " " -f 1`; do
     fi
  
     if [ $I -gt 0 ]; then
-      ETH=""
+      ETH_SHOW=""
     fi
 
-    echo -e "$PING$ETH \033[5G | $IP \033[23G | $NET \033[44G | $GW \033[62G | $RT \033[0m"
+    echo -e "$PING$ETH_SHOW \033[5G | $IP \033[23G | $NET \033[44G | $GW \033[62G | $RT \033[0m"
     let I=$I+1
   done
 done

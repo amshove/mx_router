@@ -64,7 +64,7 @@ for ETH in `ifconfig | grep ^eth | grep -v eth0 | cut -d " " -f 1`; do
   done
 done
 echo ""
-for D in `grep nameserver /etc/resolv.conf | cut -d " " -f 2`; do
+for D in `grep ^nameserver /etc/resolv.conf | cut -d " " -f 2`; do
   echo "DNS: $D"
 done
 echo ""

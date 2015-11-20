@@ -4,6 +4,9 @@
 # Copyright (C) Torsten Amshove <torsten@amshove.net> #
 # See: http://www.amshove.net                         #
 #######################################################
+$log_ident = substr(md5(mt_rand()),0,5);
+openlog("mx_router[soap_selfservice_$log_ident]",LOG_ODELAY,LOG_USER); // Logging zu Syslog oeffnen
+
 require("../config.inc.php");
 require("../functions.inc.php");
 
@@ -218,16 +221,21 @@ if($_SERVER["REMOTE_ADDR"] != "127.0.0.1" && (!isset($_SERVER['PHP_AUTH_USER']) 
         $period_start = mysql_result($query,0,"period_start");
       }
 
+      my_syslog("Freischaltung fuer $ip fuer $time: $reason");
+      my_syslog("Used: $used, Period_Start: $peroid_start");
       $iptables_list = iptables_list();
       if(in_array($ip,$iptables_list[0])){
         $return[0] = false;
         $return[1] = "Das Internet ist bereits freigeschaltet.";
+        my_syslog($return[1]);
       }elseif(!$admin && $time < 1){
         $return[0] = false;
         $return[1] = "Du darfst keine uneingeschr&auml;nkte Freischaltung vornehmen."; 
+        my_syslog($return[1]);
       }elseif(!$admin && $time > ($timeslots-$used)){
         $return[0] = false;
         $return[1] = "Es sind nicht mehr genug Minuten frei.";
+        my_syslog($return[1]);
       }else{
         $now = time();
         $end_date = $now + ($time*60);
@@ -238,9 +246,11 @@ if($_SERVER["REMOTE_ADDR"] != "127.0.0.1" && (!isset($_SERVER['PHP_AUTH_USER']) 
           if(!$admin) mysql_query("INSERT INTO timeslots SET ip = '".$ip."', used = '".$used."', period_start = '".$period_start."' ON DUPLICATE KEY UPDATE used = '".$used."'");
           $return[0] = true;
           $return[1] = "Das Internet ist jetzt f&uuml;r $time Minuten freigeschaltet.";
+          my_syslog($return[1]);
         }else{
           $return[0] = false;
           $return[1] = "Es ist ein Fehler aufgetreten.";
+          my_syslog($return[1]);
         }
       }
       return $return;

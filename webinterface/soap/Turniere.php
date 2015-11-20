@@ -4,6 +4,9 @@
 # Copyright (C) Torsten Amshove <torsten@amshove.net> #
 # See: http://www.amshove.net                         #
 #######################################################
+$log_ident = substr(md5(mt_rand()),0,5);
+openlog("mx_router[soap_turniere_$log_ident]",LOG_ODELAY,LOG_USER); // Logging zu Syslog oeffnen
+
 require("../config.inc.php");
 require("../functions.inc.php");
 
@@ -126,6 +129,8 @@ if($_SERVER["REMOTE_ADDR"] != "127.0.0.1" && (!isset($_SERVER['PHP_AUTH_USER']) 
       }
       $now = time();
 
+      my_syslog("Freischalten: tcid $tcid, tid $tid, ips: ".var_export($ips,true).", reason: $reason");
+
       // Leitung raussuchen
       $l_anz = 500;
       $leitung = -1;
@@ -133,12 +138,15 @@ if($_SERVER["REMOTE_ADDR"] != "127.0.0.1" && (!isset($_SERVER['PHP_AUTH_USER']) 
       if(!$l){
         $return[0] = false;
         $return[1] = "Dem Turnier sind keine Leitungen zugeordnet.";
+        my_syslog($return[1]);
         return $return;
       }
       $query = mysql_query("SELECT leitung, COUNT(*) as anz FROM history WHERE leitung IN ($l) AND active = 1 GROUP BY leitung");
       $db_anz = array();
+      my_syslog("Vorhandene Freischaltungen pro Leitung:");
       while($row = mysql_fetch_assoc($query)){
         $db_anz[$row["leitung"]] = $row["anz"];
+        my_syslog($row["leitung"]." => ".$row["anz"]);
       }
       foreach(explode(",",$l) as $lt){
         $anz = 0;
@@ -149,9 +157,11 @@ if($_SERVER["REMOTE_ADDR"] != "127.0.0.1" && (!isset($_SERVER['PHP_AUTH_USER']) 
           $l_anz = $anz;
         }
       }
+      my_syslog("Leitung rausgesucht: $leitung");
       if($leitung < 1){
         $return[0] = false;
         $return[1] = "Es wurde keine Leitung gefunden.";
+        my_syslog($return[1]);
         return $return;
       }
       
@@ -161,26 +171,31 @@ if($_SERVER["REMOTE_ADDR"] != "127.0.0.1" && (!isset($_SERVER['PHP_AUTH_USER']) 
         $query = mysql_query("SELECT id FROM history WHERE active = 1 AND ip = '$ip' LIMIT 1");
         if(mysql_num_rows($query) > 0){
           // Bereits freigeschaltet - loesche alte Regel erstmal
+          my_syslog("Alte Freischaltung fuer $ip gefunden - wird erst mal geloescht");
           $old_id = mysql_result($query,0,"id");
           if(!rule_del($old_id,"Turniere")){
             $return[0] = false;
             $return[1] = "$ip hatte bereits eine Freischaltung - es ist ein Fehler aufgetreten beim Entfernen";
+            my_syslog($return[1]);
             return $return;
           }
         }
 
         // Neue Regel anlegen
         mysql_query("INSERT INTO history SET ip = '".$ip."', leitung = '$leitung', add_user = 'Turniere', add_date = '".$now."', active = -1, tcid = '$tcid', old_id = '$old_id', reason = '$reason'");
+        my_syslog("Freiscaltung anlegen fuer $ip");
         $id = mysql_insert_id();
         if(!($id > 0 && rule_add($id))){
           $return[0] = false;
           $return[1] = "Es ist ein Fehler aufgetreten beim Freischalten von $ip";
+          my_syslog($return[1]);
           return $return;
         }
       }
 
       $return[0] = true;
       $return[1] = "Freischaltung erfolgreich.";
+      my_syslog($return[1]);
       return $return;
       // $return[0]              - true/false - Freischaltung erfolgreich/nicht erfolgreich
       // $return[1]              - (Fehler-)meldung

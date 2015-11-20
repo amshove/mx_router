@@ -34,11 +34,14 @@ function rule_add($id,$restore = false){
   $id = mysql_real_escape_string($id);
   $values = mysql_fetch_assoc(mysql_query("SELECT * FROM history WHERE id = '".$id."' LIMIT 1"));
 
+  my_syslog("rule_add(): values: ".var_export($values,true));
+
   if(!$restore && mysql_num_rows(mysql_query("SELECT id FROM history WHERE ip = '".$values["ip"]."' AND active = 1 LIMIT 1")) > 0) return false; // Keine doppelten Freischaltungen
 
   if($values["ip"]){
     $cmd = $iptables_cmd." -A FORWARD --source ".escapeshellarg($values["ip"])." -j ACCEPT";
     exec($cmd,$retarr,$retrc);
+    my_syslog("rule_add($id,$restore): $cmd | RC: $retrc");
     if($retrc != 0){
       if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
       return false;
@@ -60,12 +63,15 @@ function rule_del($id,$del_user){
   $del_user = mysql_real_escape_string($del_user);
   $values = mysql_fetch_assoc(mysql_query("SELECT * FROM history WHERE id = '".$id."' LIMIT 1"));
 
+  my_syslog("rule_del(): values: ".var_export($values,true));
+
   if($values["ip"]){
     $tmp = iptables_list();
     $iptables_traffic = $tmp[1];
 
     $cmd = $iptables_cmd." -D FORWARD --source ".escapeshellarg($values["ip"])." -j ACCEPT";
     exec($cmd,$retarr,$retrc);
+    my_syslog("rule_del($id,$del_user): $cmd | RC: $retrc");
     if($retrc != 0){
       if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
       $tmp = iptables_list();
@@ -87,10 +93,13 @@ function leitung_chg($id,$leitung_neu){
   $id = mysql_real_escape_string($id);
   $values = mysql_fetch_assoc(mysql_query("SELECT * FROM history WHERE id = '".$id."' LIMIT 1"));
 
+  my_syslog("leitung_chg(): values: ".var_export($values,true));
+
   // Alten Eintrag loeschen
   if($values["leitung"] > 0){
     $cmd = $iptables_cmd." -t mangle -D PREROUTING --source ".escapeshellarg($values["ip"])." -j MARK --set-mark ".escapeshellarg($values["leitung"]);
     exec($cmd,$retarr,$retrc);
+    my_syslog("leitung_chg($id,$leitung_neu): $cmd | RC: $retrc");
   }
 
   mysql_query("UPDATE history SET leitung = '".mysql_real_escape_string($leitung_neu)."' WHERE id = '".$id."' LIMIT 1");
@@ -99,6 +108,7 @@ function leitung_chg($id,$leitung_neu){
   if($leitung_neu > 0){
     $cmd = $iptables_cmd." -t mangle -I PREROUTING 2 --source ".escapeshellarg($values["ip"])." -j MARK --set-mark ".escapeshellarg($leitung_neu);
     exec($cmd,$retarr,$retrc);
+    my_syslog("leitung_chg($id,$leitung_neu): $cmd | RC: $retrc");
     if($retrc != 0){
       if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
       return false;
@@ -113,11 +123,14 @@ function ports_add($id){
   $id = mysql_real_escape_string($id);
   $values = mysql_fetch_assoc(mysql_query("SELECT * FROM ports WHERE id = '".$id."' LIMIT 1"));
 
+  my_syslog("ports_add(): values: ".var_export($values,true));
+
   if(empty($values["tcp"]) && empty($values["udp"])) return false;
 
   if(!empty($values["tcp"])){
     $cmd = $iptables_cmd." -A FORWARD -m multiport -p tcp --dports ".escapeshellarg($values["tcp"])." -j ACCEPT -m comment --comment \"Global-Ports: ".escapeshellarg($values["name"])."\"";
     exec($cmd,$retarr,$retrc);
+    my_syslog("ports_add($id): $cmd | RC: $retrc");
     if($retrc != 0){
       if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
       return false;
@@ -127,6 +140,7 @@ function ports_add($id){
   if(!empty($values["udp"])){
     $cmd = $iptables_cmd." -A FORWARD -m multiport -p udp --dports ".escapeshellarg($values["udp"])." -j ACCEPT -m comment --comment \"Global-Ports: ".escapeshellarg($values["name"])."\"";
     exec($cmd,$retarr,$retrc);
+    my_syslog("ports_add($id): $cmd | RC: $retrc");
     if($retrc != 0){
       if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
       return false;
@@ -143,11 +157,14 @@ function ports_del($id){
   $id = mysql_real_escape_string($id);
   $values = mysql_fetch_assoc(mysql_query("SELECT * FROM ports WHERE id = '".$id."' LIMIT 1"));
 
+  my_syslog("ports_del(): values: ".var_export($values,true));
+
   if(empty($values["tcp"]) && empty($values["udp"])) return false;
 
   if(!empty($values["tcp"])){
     $cmd = $iptables_cmd." -D FORWARD -m multiport -p tcp --dports ".escapeshellarg($values["tcp"])." -j ACCEPT -m comment --comment \"Global-Ports: ".escapeshellarg($values["name"])."\"";
     exec($cmd,$retarr,$retrc);
+    my_syslog("ports_del($id): $cmd | RC: $retrc");
     if($retrc != 0){
       if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
       return false;
@@ -157,6 +174,7 @@ function ports_del($id){
   if(!empty($values["udp"])){
     $cmd = $iptables_cmd." -D FORWARD -m multiport -p udp --dports ".escapeshellarg($values["udp"])." -j ACCEPT -m comment --comment \"Global-Ports: ".escapeshellarg($values["name"])."\"";
     exec($cmd,$retarr,$retrc);
+    my_syslog("ports_del($id): $cmd | RC: $retrc");
     if($retrc != 0){
       if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
       return false;
@@ -175,15 +193,19 @@ function ports_leitung_chg($id,$leitung_neu){
   $id = mysql_real_escape_string($id);
   $values = mysql_fetch_assoc(mysql_query("SELECT * FROM ports WHERE id = '".$id."' LIMIT 1"));
 
+  my_syslog("ports_leitung_chg(): values: ".var_export($values,true));
+
   // Alten Eintrag loeschen
   if($values["leitung"] > 0){
     if(!empty($values["tcp"])){
       $cmd = $iptables_cmd." -t mangle -D PREROUTING -m multiport -p tcp --dports ".escapeshellarg($values["tcp"])." -j MARK --set-mark ".escapeshellarg($values["leitung"])." -m comment --comment \"Global-Ports: ".escapeshellarg($values["name"])."\"";
       exec($cmd,$retarr,$retrc);
+      my_syslog("ports_leitung_chg($id): $cmd | RC: $retrc");
     }
     if(!empty($values["udp"])){
       $cmd = $iptables_cmd." -t mangle -D PREROUTING -m multiport -p udp --dports ".escapeshellarg($values["tcp"])." -j MARK --set-mark ".escapeshellarg($values["leitung"])." -m comment --comment \"Global-Ports: ".escapeshellarg($values["name"])."\"";
       exec($cmd,$retarr,$retrc);
+      my_syslog("ports_leitung_chg($id): $cmd | RC: $retrc");
     }
   }
 
@@ -194,6 +216,7 @@ function ports_leitung_chg($id,$leitung_neu){
     if(!empty($values["tcp"])){
       $cmd = $iptables_cmd." -t mangle -A PREROUTING -m multiport -p tcp --dports ".escapeshellarg($values["tcp"])." -j MARK --set-mark ".escapeshellarg($leitung_neu)." -m comment --comment \"Global-Ports: ".escapeshellarg($values["name"])."\"";
       exec($cmd,$retarr,$retrc);
+      my_syslog("ports_leitung_chg($id): $cmd | RC: $retrc");
       if($retrc != 0){
         if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
         return false;
@@ -202,6 +225,7 @@ function ports_leitung_chg($id,$leitung_neu){
     if(!empty($values["udp"])){
       $cmd = $iptables_cmd." -t mangle -A PREROUTING -m multiport -p udp --dports ".escapeshellarg($values["tcp"])." -j MARK --set-mark ".escapeshellarg($leitung_neu)." -m comment --comment \"Global-Ports: ".escapeshellarg($values["name"])."\"";
       exec($cmd,$retarr,$retrc);
+      my_syslog("ports_leitung_chg($id): $cmd | RC: $retrc");
       if($retrc != 0){
         if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
         return false;
@@ -314,6 +338,11 @@ function port_match($search_port, $range){
     }
   }
   return false;
+}
+
+// Funktion zum Loggen
+function my_syslog($msg){
+  syslog(LOG_WARNING,"[".$_SERVER["REMOTE_ADDR"]."|".$_SESSION["user_name"]."] ".$_SERVER["REQUEST_URI"].": $msg");
 }
 
 ############ SOAP-Client #############

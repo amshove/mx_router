@@ -37,6 +37,7 @@ if($_SESSION["ad_level"] >= 1){
       mysql_query("INSERT INTO history SET ip = '".mysql_real_escape_string($_POST["ip"])."', leitung = '".mysql_real_escape_string($_POST["leitung"])."', add_user = '".mysql_real_escape_string($_SESSION["user_name"])."', add_date = '".$now."', end_date = '".$end_date."', active = -1, reason = '".mysql_real_escape_string($_POST["reason"])."'");
       $id = mysql_insert_id();
 
+      my_syslog("Neue Regel erstellen");
       if(rule_add($id)){
         echo "<div class='meldung_ok'>Regel erfolgreich erstellt</div><br>";
       }else{
@@ -51,6 +52,7 @@ if($_SESSION["ad_level"] >= 1){
     elseif(is_array($_POST["id"])) $ids = $_POST["id"];
 
     if(count($ids) > 0){
+      my_syslog("Regeln loeschen");
       foreach($ids as $id){
         if(rule_del($id,$_SESSION["user_name"])){
           echo "<div class='meldung_ok'>Regel erfolgreich gel&ouml;scht.</div><br>";
@@ -62,18 +64,22 @@ if($_SESSION["ad_level"] >= 1){
   }elseif($_GET["cmd"] == "ports" && $_GET["id"] > 0 && $_SESSION["ad_level"] >= 4){
     $status = false;
     if($_GET["do"] == "on"){
+      my_syslog("Ports freischalten");
       $status = ports_add($_GET["id"]);
     }elseif($_GET["do"] == "off"){
+      my_syslog("Ports sperren");
       $status = ports_del($_GET["id"]);
     }
     if($status) echo "<div class='meldung_ok'>Regel erfolgreich ge&auml;ndert.</div><br>";
     else echo "<div class='meldung_error'>Regel nicht erfolgreich ge&auml;ndert.</div><br>";
   }elseif($_POST["port_id"] > 0 && $_SESSION["ad_level"] >= 4){
+    my_syslog("Port Leitung aendern");
     if(ports_leitung_chg($_POST["port_id"],$_POST["leitung"])) echo "<div class='meldung_ok'>Regel erfolgreich ge&auml;ndert.</div><br>";
     else echo "<div class='meldung_error'>Regel nicht erfolgreich ge&auml;ndert.</div><br>";
   }
 
   if($_GET["cmd"] == "chg" && $_GET["id"]){
+    my_syslog("Leitung aendern");
     if(leitung_chg($_GET["id"],$_GET["leitung"])) echo "<div class='meldung_ok'>Regel erfolgreich ge&auml;ndert.</div><br>";
     else echo "<div class='meldung_error'>Regel nicht erfolgreich ge&auml;ndert.</div><br>";
   }

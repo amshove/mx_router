@@ -20,6 +20,7 @@ if($_GET["cmd"] == "edit" && is_numeric($_GET["id"]) && !empty($_GET["id"])){
   $value = mysql_fetch_assoc(mysql_query("SELECT * FROM ports WHERE id = '".mysql_real_escape_string($_GET["id"])."' LIMIT 1"));
 }elseif($_GET["cmd"] == "del" && is_numeric($_GET["id"]) && !empty($_GET["id"])){
   // loeschen
+  my_syslog("Globale Ports loeschen: ".var_export(mysql_fetch_assoc(mysql_query("SELECT * FROM ports WHERE id = '".mysql_real_escape_string($_GET["id"])."' LIMIT 1")),true));
   if(mysql_result(mysql_query("SELECT active FROM ports WHERE id = '".mysql_real_escape_string($_GET["id"])."' LIMIT 1"),0,"active") == "1") ports_del($_GET["id"]);
   mysql_query("DELETE FROM ports WHERE id = '".mysql_real_escape_string($_GET["id"])."' LIMIT 1");
 }
@@ -64,8 +65,12 @@ if($_POST["add"] || $_POST["edit"]){
         if(mysql_result(mysql_query("SELECT active FROM ports WHERE id = '".$id."' LIMIT 1"),0,"active") == "1") $active = true;
         else $active = false;
 
+        my_syslog("Globale Ports aendern");
+        my_syslog("Alt: ".var_export(mysql_fetch_assoc(mysql_query("SELECT * FROM ports WHERE id = '".mysql_real_escape_string($id)."' LIMIT 1")),true));
+
         if($active) ports_del($id);
         mysql_query("UPDATE ports SET name = '".$name."', tcp = '".$tcp."', udp = '".$udp."' WHERE id = '".$id."' LIMIT 1");
+        my_syslog("Neu: ".var_export(mysql_fetch_assoc(mysql_query("SELECT * FROM ports WHERE id = '".mysql_real_escape_string($id)."' LIMIT 1")),true));
         if($active) ports_add($id);
         echo "<div class='meldung_ok'>Globale Freischaltung ge&auml;ndert.</div><br>";
       }

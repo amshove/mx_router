@@ -8,6 +8,7 @@
 if($_SESSION["ad_level"] >= 1){
   if($_GET["cmd"] == "clean" && $_SESSION["ad_level"] >= 5){
     mysql_query("DELETE FROM history WHERE active < 1");
+    my_syslog("History truncated");
   }
 
   echo "<h3>Alte Freigaben</h3>";

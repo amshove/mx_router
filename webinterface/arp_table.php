@@ -8,6 +8,7 @@
 if($_SESSION["ad_level"] >= 4){
   if($_GET["cmd"] == "clean" && $_SESSION["ad_level"] >= 5){
     mysql_query("TRUNCATE arp_table");
+    my_syslog("ARP Tabelle truncated");
   }
 
   echo "<h3>Historische ARP-Tabelle</h3>";

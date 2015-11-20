@@ -8,6 +8,7 @@
 if($_SESSION["ad_level"] >= 1){
   if($_GET["cmd"] == "reset" && $_SESSION["ad_level"] >= 4){
     mysql_query("DELETE FROM timeslots WHERE ip = '".mysql_real_escape_string($_GET["ip"])."'");
+    my_syslog("SelfService Timeslots resettet fuer ".$_GET["ip"]);
     echo "<div class='meldung_ok'>Kontingent f&uuml;r ".$_GET["ip"]." zur&uuml;ckgesetzt.</div><br>";
   }
 

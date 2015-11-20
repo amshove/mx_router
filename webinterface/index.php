@@ -4,6 +4,8 @@
 # Copyright (C) Torsten Amshove <torsten@amshove.net> #
 # See: http://www.amshove.net                         #
 #######################################################
+$log_ident = substr(md5(mt_rand()),0,5);
+openlog("mx_router[web_$log_ident]",LOG_ODELAY,LOG_USER); // Logging zu Syslog oeffnen
 require("config.inc.php");
 require("functions.inc.php");
 

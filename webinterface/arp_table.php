@@ -14,6 +14,10 @@ if($_SESSION["ad_level"] >= 4){
   echo "<h3>Historische ARP-Tabelle</h3>";
   if($_SESSION["ad_level"] >= 5) echo "<a onClick='return confirm(\"History wirklich leeren?\");' href='index.php?page=arp_table&cmd=clean'>alle l&ouml;schen</a>";
 
+  echo "<br>";
+  echo "Unterschiedliche MAC-Adressen: ".mysql_num_rows(mysql_query("SELECT DISTINCT mac AS count FROM arp_table"))."<br>";
+  echo "Unterschiedliche IP-Adressen: ".mysql_num_rows(mysql_query("SELECT DISTINCT ip AS count FROM arp_table"))."<br>";
+
   echo "<h4>Eintr&auml;ge mit unterschiedlichen MAC-Adressen zu einer IP</h4>";
   echo "<table class='hover_row'>";
   echo "  <thead>";

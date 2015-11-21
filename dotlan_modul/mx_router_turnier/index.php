@@ -113,7 +113,11 @@ if($client && !empty($_GET["tcid"]) && is_numeric($_GET["tcid"])){
     }else{
       // Internet freischalten
       if($_POST["setInternet"]){
-        $reason =  "Contest ".$out_turnier['tcid']." - ".$team_a." vs ".$team_b." - ".$_GET['round'];
+        $team_a = preg_replace("/[^a-zA-Z0-9]*/","",$team_a);
+        $team_b = preg_replace("/[^a-zA-Z0-9]*/","",$team_b);
+        $round = preg_replace("/[^a-zA-Z0-9]*/","",$_GET['round']);
+        
+        $reason =  "Contest ".$out_turnier['tcid']." - ".$team_a." vs ".$team_b." - ".$round;
   
         // IPs raussuchen
         $ips = array();

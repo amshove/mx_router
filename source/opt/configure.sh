@@ -140,6 +140,12 @@ for LEITUNG_CFG in `ls -1 $PFAD/etc/leitungen.d/ | grep "\.conf$" | grep -v temp
   echo "# Routing-Tabelle '$NAME' einstellen" >> $PFAD/start.routing.tmp
   echo "ip route add $LOCAL_NET src $LOCAL_IP dev $IF_INTERNAL table $NAME" >> $PFAD/start.routing.tmp
   echo "ip route add $SUBNET src $IP dev $INTERFACE table $NAME" >> $PFAD/start.routing.tmp
+  OLD_IFS=$IFS
+  IFS=$'\012' # Sonst trennt cat auch Leerzeichen
+  for R in `grep -v "^#" etc/routes.template | grep -v "^[[:space:]]*$"`; do
+    echo "$R src $LOCAL_IP dev $IF_INTERNAL table $NAME" >> $PFAD/start.routing.tmp
+  done
+  IFS=$OLD_IFS
   echo "ip route add default via $GW src $IP dev $INTERFACE table $NAME" >> $PFAD/start.routing.tmp
   echo "" >> $PFAD/start.routing.tmp
   echo "# FWmark-Regel setzen" >> $PFAD/start.routing.tmp
@@ -206,6 +212,12 @@ echo "" >> $PFAD/start.sh
 cat $PFAD/start.routing.tmp >> $PFAD/start.sh
 echo "" >> $PFAD/start.sh
 echo "# Default-Route in Default-Tabelle, damit der Server auch ins Netz kommt" >> $PFAD/start.sh
+OLD_IFS=$IFS
+IFS=$'\012' # Sonst trennt cat auch Leerzeichen
+for R in `grep -v "^#" etc/routes.template | grep -v "^[[:space:]]*$"`; do
+  echo "$R src $LOCAL_IP dev $IF_INTERNAL" >> $PFAD/start.sh
+done
+IFS=$OLD_IFS
 echo "ip route add default via $DEFAULT_GW dev $DEFAULT_GW_IF src $DEFAULT_GW_IP" >> $PFAD/start.sh
 echo "" >> $PFAD/start.sh
 echo "" >> $PFAD/start.sh

@@ -1,0 +1,5 @@
+# Die Felder src und dev werden automatisch an die Regeln angehaengt
+# Alle Regeln werden in allen Routing-Tabellen gesetzt
+# Alle Routen gelten nur fuer das interne interface
+
+#ip route add 10.10.0.0/20 via 10.10.16.100

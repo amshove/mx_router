@@ -5,6 +5,21 @@
 # See: http://www.amshove.net                         #
 #######################################################
 
+if [ "`grep auto /etc/network/interfaces | grep -v lo | wc -l`" != "1" ]; then
+  echo "Es wurde mehr als ein Interface in /etc/network/interfaces gefunden .."
+  read -p "Wie lautet das interne Interface?" IF_INTERNAL
+else
+  IF_INTERNAL=`grep auto /etc/network/interfaces | grep -v lo | cut -d " " -f 2`
+fi
+
+grep $IF_INTERNAL /etc/network/interfaces > /dev/null 2>&1
+if [ $? -ne 0 ] || [ "$IF_INTERNAL" == "" ]; then
+  echo "Internes Interface nicht richtig angegeben."
+  exit 1
+fi
+
+echo "Internal Interface: $IF_INTERNAL"
+
 echo "# ACHTUNG: Der Router wird gestoppt"
 read -p "Soll der Router nach dem Konfigurieren wieder gestartet werden? (y/n) " START
 
@@ -16,11 +31,17 @@ fi
 PFAD="/opt/mx_router"
 FW_TMPL="$PFAD/etc/firewall.template"
 
-LOCAL_NET=`ip route | grep eth0 | grep link | grep -v default | cut -d " " -f 1` # Sowas wie 10.10.0.0/20
-LOCAL_IP=`ifconfig eth0 | grep 'inet ' | cut -d: -f2 | awk '{ print $1}'`
+LOCAL_NET=`ip route | grep $IF_INTERNAL | grep link | grep -v default | cut -d " " -f 1` # Sowas wie 10.10.0.0/20
+LOCAL_IP=`ifconfig $IF_INTERNAL | grep 'inet ' | cut -d: -f2 | awk '{ print $1}'`
 
 echo "# Stopping mx_router .."
-stop mx_router
+dpkg -s upstart  > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+  stop mx_router
+else
+  systemctl stop mx_router.service
+fi
+
 
 # Routing-Tables erstellen
 echo "#
@@ -117,7 +138,7 @@ for LEITUNG_CFG in `ls -1 $PFAD/etc/leitungen.d/ | grep "\.conf$" | grep -v temp
   echo "ip link set $INTERFACE up" >> $PFAD/start.routing.tmp
   echo "" >> $PFAD/start.routing.tmp
   echo "# Routing-Tabelle '$NAME' einstellen" >> $PFAD/start.routing.tmp
-  echo "ip route add $LOCAL_NET src $LOCAL_IP dev eth0 table $NAME" >> $PFAD/start.routing.tmp
+  echo "ip route add $LOCAL_NET src $LOCAL_IP dev $IF_INTERNAL table $NAME" >> $PFAD/start.routing.tmp
   echo "ip route add $SUBNET src $IP dev $INTERFACE table $NAME" >> $PFAD/start.routing.tmp
   echo "ip route add default via $GW src $IP dev $INTERFACE table $NAME" >> $PFAD/start.routing.tmp
   echo "" >> $PFAD/start.routing.tmp
@@ -283,5 +304,11 @@ echo "#############################"
 if [ "$START" == "y" ]; then
   echo ""
   echo "# Starte mx_router .."
-  start mx_router
+
+  dpkg -s upstart  > /dev/null 2>&1
+  if [ $? -eq 0 ]; then
+    start mx_router
+  else
+    systemctl start mx_router.service
+  fi
 fi

@@ -12,7 +12,7 @@ echo "###################################"
 grep dhcp /etc/network/interfaces  > /dev/null 2>&1
 if [ $? -eq 0 ]; then
   echo "# In /etc/network/interfaces steht noch ein Interface auf dhcp ..."
-  echo "# eth0 muss fest auf die LAN-IP eingestellt sein"
+  echo "# Das interne Interface muss fest auf die LAN-IP eingestellt sein"
   echo "# alle anderen Interfaces duerfen keine Konfiguration haben"
   echo "# Breche ab .. bitte erst /etc/network/interfaces bearbeiten"
   exit 1
@@ -22,7 +22,7 @@ echo "# Deinstalliere resolvconf & appamor (mit funktioniert das ip_forwarding n
 apt-get -y remove apparmor apparmor-utils resolvconf
 
 echo "# Installiere fehlende Pakete"
-PACKAGES="dnsmasq apache2 libapache2-mod-php5 php5-mysql php5 php5-cli mysql-server ntp ethtool conntrack" 
+PACKAGES="dnsmasq apache2 libapache2-mod-php php-mysql php php-cli mysql-server ntp ethtool conntrack" 
 apt-get -y install $PACKAGES
 
 dpkg -s $PACKAGES > /dev/null 2>&1
@@ -116,6 +116,8 @@ echo "# Kopiere Webinterface nach /var/www"
 cp -r webinterface/* /var/www/
 chown -R root:root /var/www/
 
+sed -i.bak -e "s/DocumentRoot\ \/var\/www\/html/DocumentRoot\ \/var\/www/" /etc/apache2/sites-enabled/000-default.conf
+
 echo "# Trage MySQL-PW in config.inc.php ein"
 sed -i s/--MYSQL_PW--/$MX_PW/ /var/www/config.inc.php
 
@@ -145,11 +147,20 @@ echo "# Richte Status-motd ein"
 rm /etc/update-motd.d/*
 ln -s /opt/mx_router/show_status.sh /etc/update-motd.d/99-mx_router-status
 
-echo "# Lege Upstart-Config an (/etc/init/mx_router.conf)"
-cp source/mx_router.conf /etc/init/mx_router.conf
-chown root:root /etc/init/mx_router.conf
-chmod 644 /etc/init/mx_router.conf
-initctl reload-configuration
+dpkg -s upstart  > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+  echo "# Lege Upstart-Config an (/etc/init/mx_router.conf)"
+  cp source/mx_router.conf /etc/init/mx_router.conf
+  chown root:root /etc/init/mx_router.conf
+  chmod 644 /etc/init/mx_router.conf
+  initctl reload-configuration
+else
+  echo "# Lege systemd-Config an (/etc/init/mx_router.conf)"
+  cp source/mx_router.service /etc/systemd/system/
+  chown root:root /etc/systemd/system/mx_router.service
+  chmod 644 /etc/systemd/system/mx_router.service
+  systemctl enable mx_router.service
+fi
 
 echo ""
 echo ""

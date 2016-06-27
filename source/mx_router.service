@@ -1,0 +1,19 @@
+#######################################################
+# -------------------- mx_router -------------------- #
+# Copyright (C) Torsten Amshove <torsten@amshove.net> #
+# See: http://www.amshove.net                         #
+#######################################################
+
+[Unit]
+Description=mx_router
+Requires=mysql.service
+After=mysql.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/mx_router/start.sh
+ExecStop=/opt/mx_router/stop.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

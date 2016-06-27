@@ -7,7 +7,7 @@
 
 if($_SESSION["ad_level"] >= 1){
   if($_GET["cmd"] == "clean" && $_SESSION["ad_level"] >= 5){
-    mysql_query("DELETE FROM history WHERE active < 1");
+    mysqli_query($db,"DELETE FROM history WHERE active < 1");
     my_syslog("History truncated");
   }
 
@@ -27,8 +27,8 @@ if($_SESSION["ad_level"] >= 1){
   echo "  </tr>";
   echo "  </thead>";
   echo "  <tbody>";
-  $query = mysql_query("SELECT * FROM history WHERE active < 1 ORDER BY del_date DESC");
-  while($row = mysql_fetch_assoc($query)){
+  $query = mysqli_query($db,"SELECT * FROM history WHERE active < 1 ORDER BY del_date DESC");
+  while($row = mysqli_fetch_assoc($query)){
     echo "<tr>";
     echo "  <td valign='top'>".$row["ip"]."</td>";
     echo "  <td valign='top'>".nl2br($row["reason"])."</td>";

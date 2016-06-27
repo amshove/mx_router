@@ -92,20 +92,21 @@ if($_SERVER["REMOTE_ADDR"] != "127.0.0.1" && (!isset($_SERVER['PHP_AUTH_USER']) 
   }else{
     // Guckt nach, ob das Turnier dem Router bekannt ist
     function checkTurnier($tid){
-      return mysql_num_rows(mysql_query("SELECT * FROM turniere WHERE turnier_id = '".mysql_real_escape_string($tid)."' LIMIT 1")) > 0;
+      global $db;
+      return mysqli_num_rows(mysqli_query($db,"SELECT * FROM turniere WHERE turnier_id = '".mysqli_real_escape_string($db,$tid)."' LIMIT 1")) > 0;
      // $return                - true/false, ob das Turnier im Router angelegt wurde
     }
 
     // Gibt den Status fuer das aktuelle Match zurueck
     function getStatus($tcid){
-      global $leitungen_fw;
-      $tcid = mysql_real_escape_string($tcid);
+      global $leitungen_fw, $db;
+      $tcid = mysqli_real_escape_string($db,$tcid);
 
-      $query = mysql_query("SELECT ip, leitung FROM history WHERE tcid = '".$tcid."' AND active = 1");
-      if(mysql_num_rows($query) < 1) return false;
+      $query = mysqli_query($db,"SELECT ip, leitung FROM history WHERE tcid = '".$tcid."' AND active = 1");
+      if(mysqli_num_rows($query) < 1) return false;
 
       $return = array();
-      while($row = mysql_fetch_assoc($query)){
+      while($row = mysqli_fetch_assoc($query)){
         $return[$row["ip"]] = $leitungen_fw[$row["leitung"]]["name"];
       }
 
@@ -116,10 +117,11 @@ if($_SERVER["REMOTE_ADDR"] != "127.0.0.1" && (!isset($_SERVER['PHP_AUTH_USER']) 
 
     // Schaltet das Internet fuer ein Match frei und legt die Teilnehmer auf eine bestimmte Leitung
     function setInternet($tcid, $tid, $ips, $reason){ 
+      global $db;
       $return = array();
-      $tcid = mysql_real_escape_string($tcid);
-      $tid = mysql_real_escape_string($tid);
-      $reason = mysql_real_escape_string($reason);
+      $tcid = mysqli_real_escape_string($db,$tcid);
+      $tid = mysqli_real_escape_string($db,$tid);
+      $reason = mysqli_real_escape_string($db,$reason);
       foreach($ips as $ip){
         if(!preg_match("/^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$/",$ip)){
           $return[0] = false;
@@ -134,17 +136,17 @@ if($_SERVER["REMOTE_ADDR"] != "127.0.0.1" && (!isset($_SERVER['PHP_AUTH_USER']) 
       // Leitung raussuchen
       $l_anz = 500;
       $leitung = -1;
-      $l = @mysql_result(mysql_query("SELECT leitungen FROM turniere WHERE turnier_id = '$tid' LIMIT 1"),0,"leitungen");
+      $l = @own_mysqli_result(mysqli_query($db,"SELECT leitungen FROM turniere WHERE turnier_id = '$tid' LIMIT 1"),0,"leitungen");
       if(!$l){
         $return[0] = false;
         $return[1] = "Dem Turnier sind keine Leitungen zugeordnet.";
         my_syslog($return[1]);
         return $return;
       }
-      $query = mysql_query("SELECT leitung, COUNT(*) as anz FROM history WHERE leitung IN ($l) AND active = 1 GROUP BY leitung");
+      $query = mysqli_query($db,"SELECT leitung, COUNT(*) as anz FROM history WHERE leitung IN ($l) AND active = 1 GROUP BY leitung");
       $db_anz = array();
       my_syslog("Vorhandene Freischaltungen pro Leitung:");
-      while($row = mysql_fetch_assoc($query)){
+      while($row = mysqli_fetch_assoc($query)){
         $db_anz[$row["leitung"]] = $row["anz"];
         my_syslog($row["leitung"]." => ".$row["anz"]);
       }
@@ -168,11 +170,11 @@ if($_SERVER["REMOTE_ADDR"] != "127.0.0.1" && (!isset($_SERVER['PHP_AUTH_USER']) 
       // IPs durchgehen
       foreach($ips as $ip){
         $old_id = 0;
-        $query = mysql_query("SELECT id FROM history WHERE active = 1 AND ip = '$ip' LIMIT 1");
-        if(mysql_num_rows($query) > 0){
+        $query = mysqli_query($db,"SELECT id FROM history WHERE active = 1 AND ip = '$ip' LIMIT 1");
+        if(mysqli_num_rows($query) > 0){
           // Bereits freigeschaltet - loesche alte Regel erstmal
           my_syslog("Alte Freischaltung fuer $ip gefunden - wird erst mal geloescht");
-          $old_id = mysql_result($query,0,"id");
+          $old_id = own_mysqli_result($query,0,"id");
           if(!rule_del($old_id,"Turniere")){
             $return[0] = false;
             $return[1] = "$ip hatte bereits eine Freischaltung - es ist ein Fehler aufgetreten beim Entfernen";
@@ -182,9 +184,9 @@ if($_SERVER["REMOTE_ADDR"] != "127.0.0.1" && (!isset($_SERVER['PHP_AUTH_USER']) 
         }
 
         // Neue Regel anlegen
-        mysql_query("INSERT INTO history SET ip = '".$ip."', leitung = '$leitung', add_user = 'Turniere', add_date = '".$now."', active = -1, tcid = '$tcid', old_id = '$old_id', reason = '$reason'");
+        mysqli_query($db,"INSERT INTO history SET ip = '".$ip."', leitung = '$leitung', add_user = 'Turniere', add_date = '".$now."', active = -1, tcid = '$tcid', old_id = '$old_id', reason = '$reason'");
         my_syslog("Freiscaltung anlegen fuer $ip");
-        $id = mysql_insert_id();
+        $id = mysqli_insert_id($db);
         if(!($id > 0 && rule_add($id))){
           $return[0] = false;
           $return[1] = "Es ist ein Fehler aufgetreten beim Freischalten von $ip";

@@ -38,11 +38,11 @@ if($_POST["submit_login"]){
   // Login
   if(empty($_POST["submit_login"]) || empty($_POST["pw"])) echo "<div class='meldung_error'>Nicht alle Felder angegeben.</div><br>";
   else{
-    $query = mysql_query("SELECT id, name, ad_level FROM user WHERE LOWER(login) = LOWER('".mysql_escape_string($_POST["login"])."') AND (pw = '".sha1($_POST["pw"])."' OR pw = '".md5($_POST["pw"])."') LIMIT 1");
-    if(mysql_num_rows($query) == 1){
-      $_SESSION["user_id"] = mysql_result($query,0,"id");
-      $_SESSION["user_name"] = mysql_result($query,0,"name");
-      $_SESSION["ad_level"] = mysql_result($query,0,"ad_level");
+    $query = mysqli_query($db,"SELECT id, name, ad_level FROM user WHERE LOWER(login) = LOWER('".mysqli_real_escape_string($db,$_POST["login"])."') AND (pw = '".sha1($_POST["pw"])."' OR pw = '".md5($_POST["pw"])."') LIMIT 1");
+    if(mysqli_num_rows($query) == 1){
+      $_SESSION["user_id"] = own_mysqli_result($query,0,"id");
+      $_SESSION["user_name"] = own_mysqli_result($query,0,"name");
+      $_SESSION["ad_level"] = own_mysqli_result($query,0,"ad_level");
       $logged_in = true;
       if($_POST["pw"] == $default_pw) $set_pw = true; // Wenn das das default-pw war, dann aendern
     }else{
@@ -74,7 +74,7 @@ if($_POST["submit_login"]){
     echo "<div class='meldung_error'>PWs stimmen nicht &uuml;berein.</div><br>";
     $set_pw = true;
   }else{
-    mysql_query("UPDATE user SET pw = '".sha1($_POST["pw1"])."' WHERE id = '".$_SESSION["user_id"]."' LIMIT 1");
+    mysqli_query($db,"UPDATE user SET pw = '".sha1($_POST["pw1"])."' WHERE id = '".$_SESSION["user_id"]."' LIMIT 1");
   }
 }
 

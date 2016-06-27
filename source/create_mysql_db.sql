@@ -16,48 +16,48 @@ CREATE TABLE IF NOT EXISTS `history` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `ip` varchar(200) NOT NULL,
   `leitung` tinyint(4) NOT NULL DEFAULT '0',
-  `add_user` varchar(200) NOT NULL,
-  `add_date` varchar(200) NOT NULL,
-  `end_date` varchar(200) NOT NULL,
-  `del_user` varchar(200) NOT NULL,
-  `del_date` varchar(200) NOT NULL,
-  `active` tinyint(4) NOT NULL,
-  `tcid` int(11) NOT NULL,
-  `old_id` int(11) NOT NULL,
-  `reason` text NOT NULL,
-  `traffic` varchar(100) NOT NULL,
+  `add_user` varchar(200) NULL,
+  `add_date` varchar(200) NULL,
+  `end_date` varchar(200) NULL,
+  `del_user` varchar(200) NULL,
+  `del_date` varchar(200) NULL,
+  `active` tinyint(4) NULL,
+  `tcid` int(11) NULL,
+  `old_id` int(11) NULL,
+  `reason` text NULL,
+  `traffic` varchar(100) NULL,
   PRIMARY KEY (`id`)
 );
 
 CREATE TABLE IF NOT EXISTS `ports` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `name` varchar(200) NOT NULL,
-  `active` tinyint(1) NOT NULL,
+  `name` varchar(200) NULL,
+  `active` tinyint(1) NULL,
   `leitung` tinyint(4) NOT NULL DEFAULT '0',
-  `tcp` varchar(200) NOT NULL,
-  `udp` varchar(200) NOT NULL,
+  `tcp` varchar(200) NULL,
+  `udp` varchar(200) NULL,
   PRIMARY KEY (`id`)
 );
 
 CREATE TABLE IF NOT EXISTS `timeslots` (
   `ip` varchar(15) CHARACTER SET latin1 NOT NULL,
-  `used` tinyint(3) unsigned NOT NULL,
-  `period_start` int(10) unsigned NOT NULL,
+  `used` tinyint(3) unsigned NULL,
+  `period_start` int(10) unsigned NULL,
   PRIMARY KEY (`ip`)
 );
 
 CREATE TABLE IF NOT EXISTS `user` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `login` varchar(200) NOT NULL,
-  `pw` varchar(200) NOT NULL,
-  `name` varchar(200) NOT NULL,
-  `ad_level` int(11) NOT NULL,
+  `login` varchar(200) NULL,
+  `pw` varchar(200) NULL,
+  `name` varchar(200) NULL,
+  `ad_level` int(11) NULL,
   PRIMARY KEY (`id`)
 );
 
 CREATE TABLE IF NOT EXISTS `turniere` (
   `turnier_id` int(11) NOT NULL,
-  `leitungen` varchar(200) NOT NULL,
+  `leitungen` varchar(200) NULL,
   PRIMARY KEY (`turnier_id`)
 );
 

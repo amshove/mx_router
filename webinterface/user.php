@@ -17,13 +17,13 @@ if($_GET["cmd"] == "edit" && is_numeric($_GET["id"]) && !empty($_GET["id"])){
   $submit_name = "edit";
   $submit_value = "&Auml;ndern";
   $display = "block";
-  $value = mysql_fetch_assoc(mysql_query("SELECT id, login, name, ad_level FROM user WHERE id = '".mysql_real_escape_string($_GET["id"])."' LIMIT 1"));
+  $value = mysqli_fetch_assoc(mysqli_query($db,"SELECT id, login, name, ad_level FROM user WHERE id = '".mysqli_real_escape_string($db,$_GET["id"])."' LIMIT 1"));
 }elseif($_GET["cmd"] == "del" && is_numeric($_GET["id"]) && !empty($_GET["id"])){
   // User loeschen
-  mysql_query("DELETE FROM user WHERE id = '".mysql_real_escape_string($_GET["id"])."' LIMIT 1");
+  mysqli_query($db,"DELETE FROM user WHERE id = '".mysqli_real_escape_string($db,$_GET["id"])."' LIMIT 1");
 }elseif($_GET["cmd"] == "pw" && is_numeric($_GET["id"]) && !empty($_GET["id"])){
   // PW zuruecksetzen auf default-pw
-  mysql_query("UPDATE user SET pw = '".sha1($default_pw)."' WHERE id = '".mysql_real_escape_string($_GET["id"])."' LIMIT 1");
+  mysqli_query($db,"UPDATE user SET pw = '".sha1($default_pw)."' WHERE id = '".mysqli_real_escape_string($db,$_GET["id"])."' LIMIT 1");
   echo "<div class='meldung_ok'>Passwort neu gesetzt: $default_pw</div><br>";
 }
 
@@ -39,17 +39,17 @@ if($_POST["add"] || $_POST["edit"]){
       $display = "block";
     }
   }else{
-    $id = mysql_real_escape_string($_POST["id"]);
-    $login = mysql_real_escape_string($_POST["login"]);
-    $name = mysql_real_escape_string($_POST["name"]);
-    $rechte = mysql_real_escape_string($_POST["ad_level"]);
+    $id = mysqli_real_escape_string($db,$_POST["id"]);
+    $login = mysqli_real_escape_string($db,$_POST["login"]);
+    $name = mysqli_real_escape_string($db,$_POST["name"]);
+    $rechte = mysqli_real_escape_string($db,$_POST["ad_level"]);
     if($_POST["add"]){
       // User mit default-pw anlegen
-      mysql_query("INSERT INTO user SET login = '".$login."', name = '".$name."', ad_level = '".$rechte."', pw = '".sha1($default_pw)."'");
+      mysqli_query($db,"INSERT INTO user SET login = '".$login."', name = '".$name."', ad_level = '".$rechte."', pw = '".sha1($default_pw)."'");
       echo "<div class='meldung_ok'>User angelegt</div><br><div class='meldung_notify'>Passwort: <b>$default_pw</b></div><br>";
     }elseif($_POST["edit"]){
       // User editieren
-      mysql_query("UPDATE user SET login = '".$login."', name = '".$name."', ad_level = '".$rechte."' WHERE id = '".$id."' LIMIT 1");
+      mysqli_query($db,"UPDATE user SET login = '".$login."', name = '".$name."', ad_level = '".$rechte."' WHERE id = '".$id."' LIMIT 1");
       echo "<div class='meldung_ok'>User ge&auml;ndert.</div><br>";
     }
   }
@@ -99,8 +99,8 @@ echo "<table class='hover_row'>
     <th width='150'>&nbsp;</th>
   </tr>";
 
-$query = mysql_query("SELECT id, login, name, ad_level FROM user ORDER BY login");
-while($row = mysql_fetch_assoc($query)){
+$query = mysqli_query($db,"SELECT id, login, name, ad_level FROM user ORDER BY login");
+while($row = mysqli_fetch_assoc($query)){
   echo "<tr>
     <td>".$row["login"]."</td>
     <td>".$row["name"]."</td>

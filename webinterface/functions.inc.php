@@ -13,8 +13,15 @@ $ad_level = array(
 );
 
 // Mit MySQL verbinden
-mysql_connect($mysql_host,$mysql_user,$mysql_pw) or die(mysql_error());
-mysql_select_db($mysql_db) or die(mysql_error());
+$db = mysqli_connect($mysql_host,$mysql_user,$mysql_pw) or die(mysql_error($db));
+mysqli_select_db($db,$mysql_db) or die(mysql_error($db));
+
+// Workaround fuer depricated mysql_result
+function own_mysqli_result($result, $row, $field){
+  mysqli_data_seek($result, $row);
+  $return = mysqli_fetch_assoc($result);
+  return $return[$field];
+}
 
 // Session starten
 session_start();
@@ -30,13 +37,13 @@ function ping($ip, $eth = ""){
 
 // FW-Freischaltung anlegen
 function rule_add($id,$restore = false){
-  global $iptables_cmd;
-  $id = mysql_real_escape_string($id);
-  $values = mysql_fetch_assoc(mysql_query("SELECT * FROM history WHERE id = '".$id."' LIMIT 1"));
+  global $iptables_cmd, $db;
+  $id = mysqli_real_escape_string($db,$id);
+  $values = mysqli_fetch_assoc(mysqli_query($db,"SELECT * FROM history WHERE id = '".$id."' LIMIT 1"));
 
   my_syslog("rule_add(): values: ".var_export($values,true));
 
-  if(!$restore && mysql_num_rows(mysql_query("SELECT id FROM history WHERE ip = '".$values["ip"]."' AND active = 1 LIMIT 1")) > 0) return false; // Keine doppelten Freischaltungen
+  if(!$restore && mysqli_num_rows(mysqli_query($db,"SELECT id FROM history WHERE ip = '".$values["ip"]."' AND active = 1 LIMIT 1")) > 0) return false; // Keine doppelten Freischaltungen
 
   if($values["ip"]){
     $cmd = $iptables_cmd." -A FORWARD --source ".escapeshellarg($values["ip"])." -j ACCEPT";
@@ -46,7 +53,7 @@ function rule_add($id,$restore = false){
       if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
       return false;
     }
-    mysql_query("UPDATE history SET active = 1 WHERE id = '".$id."' LIMIT 1");
+    mysqli_query($db,"UPDATE history SET active = 1 WHERE id = '".$id."' LIMIT 1");
 
     // Leitungszuordnung
     if($values["leitung"] > 0) return leitung_chg($id,$values["leitung"]);
@@ -58,10 +65,10 @@ function rule_add($id,$restore = false){
 
 // FW-Freischaltung entfernen
 function rule_del($id,$del_user){
-  global $iptables_cmd;
-  $id = mysql_real_escape_string($id);
-  $del_user = mysql_real_escape_string($del_user);
-  $values = mysql_fetch_assoc(mysql_query("SELECT * FROM history WHERE id = '".$id."' LIMIT 1"));
+  global $iptables_cmd, $db;
+  $id = mysqli_real_escape_string($db,$id);
+  $del_user = mysqli_real_escape_string($db,$del_user);
+  $values = mysqli_fetch_assoc(mysqli_query($db,"SELECT * FROM history WHERE id = '".$id."' LIMIT 1"));
 
   my_syslog("rule_del(): values: ".var_export($values,true));
 
@@ -78,7 +85,7 @@ function rule_del($id,$del_user){
       if($tmp[1][$values["ip"]]) return false; // Existiert Regel noch?
     }
 
-    mysql_query("UPDATE history SET active = 0, del_user = '".$del_user."', del_date = '".time()."', traffic = '".$iptables_traffic[$values["ip"]]."' WHERE id = '".$id."' LIMIT 1");
+    mysqli_query($db,"UPDATE history SET active = 0, del_user = '".$del_user."', del_date = '".time()."', traffic = '".$iptables_traffic[$values["ip"]]."' WHERE id = '".$id."' LIMIT 1");
     leitung_chg($id,0); // Leitungs-Regel loeschen
     return true;
   }
@@ -87,11 +94,11 @@ function rule_del($id,$del_user){
 
 // Leitungszuordnung fuer IP aendern
 function leitung_chg($id,$leitung_neu){
-  global $iptables_cmd, $max_fw_mark;
+  global $iptables_cmd, $max_fw_mark, $db;
   if($leitung_neu > $max_fw_mark) $leitung_neu = 0;
 
-  $id = mysql_real_escape_string($id);
-  $values = mysql_fetch_assoc(mysql_query("SELECT * FROM history WHERE id = '".$id."' LIMIT 1"));
+  $id = mysqli_real_escape_string($db,$id);
+  $values = mysqli_fetch_assoc(mysqli_query($db,"SELECT * FROM history WHERE id = '".$id."' LIMIT 1"));
 
   my_syslog("leitung_chg(): values: ".var_export($values,true));
 
@@ -102,7 +109,7 @@ function leitung_chg($id,$leitung_neu){
     my_syslog("leitung_chg($id,$leitung_neu): $cmd | RC: $retrc");
   }
 
-  mysql_query("UPDATE history SET leitung = '".mysql_real_escape_string($leitung_neu)."' WHERE id = '".$id."' LIMIT 1");
+  mysqli_query($db,"UPDATE history SET leitung = '".mysqli_real_escape_string($db,$leitung_neu)."' WHERE id = '".$id."' LIMIT 1");
 
   // Neuer Eintrag wenn noetig
   if($leitung_neu > 0){
@@ -119,9 +126,9 @@ function leitung_chg($id,$leitung_neu){
 
 // Ports global freigeben
 function ports_add($id){
-  global $iptables_cmd;
-  $id = mysql_real_escape_string($id);
-  $values = mysql_fetch_assoc(mysql_query("SELECT * FROM ports WHERE id = '".$id."' LIMIT 1"));
+  global $iptables_cmd, $db;
+  $id = mysqli_real_escape_string($db,$id);
+  $values = mysqli_fetch_assoc(mysqli_query($db,"SELECT * FROM ports WHERE id = '".$id."' LIMIT 1"));
 
   my_syslog("ports_add(): values: ".var_export($values,true));
 
@@ -147,15 +154,15 @@ function ports_add($id){
     }
   }
 
-  mysql_query("UPDATE ports SET active = 1 WHERE id = '".$id."' LIMIT 1");
+  mysqli_query($db,"UPDATE ports SET active = 1 WHERE id = '".$id."' LIMIT 1");
   return true;
 }
 
 // Globale Freigabe entfernen
 function ports_del($id){
-  global $iptables_cmd;
-  $id = mysql_real_escape_string($id);
-  $values = mysql_fetch_assoc(mysql_query("SELECT * FROM ports WHERE id = '".$id."' LIMIT 1"));
+  global $iptables_cmd, $db;
+  $id = mysqli_real_escape_string($db,$id);
+  $values = mysqli_fetch_assoc(mysqli_query($db,"SELECT * FROM ports WHERE id = '".$id."' LIMIT 1"));
 
   my_syslog("ports_del(): values: ".var_export($values,true));
 
@@ -181,17 +188,17 @@ function ports_del($id){
     }
   }
 
-  mysql_query("UPDATE ports SET active = 0 WHERE id = '".$id."' LIMIT 1");
+  mysqli_query($db,"UPDATE ports SET active = 0 WHERE id = '".$id."' LIMIT 1");
   return true;
 }
 
 // Leitungszuordnung fuer Ports aendern
 function ports_leitung_chg($id,$leitung_neu){
-  global $iptables_cmd, $max_fw_mark;
+  global $iptables_cmd, $max_fw_mark, $db;
   if($leitung_neu > $max_fw_mark) $leitung_neu = 0;
 
-  $id = mysql_real_escape_string($id);
-  $values = mysql_fetch_assoc(mysql_query("SELECT * FROM ports WHERE id = '".$id."' LIMIT 1"));
+  $id = mysqli_real_escape_string($db,$id);
+  $values = mysqli_fetch_assoc(mysqli_query($db,"SELECT * FROM ports WHERE id = '".$id."' LIMIT 1"));
 
   my_syslog("ports_leitung_chg(): values: ".var_export($values,true));
 
@@ -209,7 +216,7 @@ function ports_leitung_chg($id,$leitung_neu){
     }
   }
 
-  mysql_query("UPDATE ports SET leitung = '".mysql_real_escape_string($leitung_neu)."' WHERE id = '".$id."' LIMIT 1");
+  mysqli_query($db,"UPDATE ports SET leitung = '".mysqli_real_escape_string($db,$leitung_neu)."' WHERE id = '".$id."' LIMIT 1");
 
   // Neuer Eintrag wenn noetig
   if($leitung_neu > 0){
@@ -274,9 +281,9 @@ function iptables_list($leitung=false){
 
 // Testen, ob globale Freischaltung aktiv ist und auf welcher Leitung sie lauft
 function ports_open($id,$leitung=false){
-  global $iptables_cmd;
-  $id = mysql_real_escape_string($id);
-  $values = mysql_fetch_assoc(mysql_query("SELECT * FROM ports WHERE id = '".$id."' LIMIT 1"));
+  global $iptables_cmd, $db;
+  $id = mysqli_real_escape_string($db,$id);
+  $values = mysqli_fetch_assoc(mysqli_query($db,"SELECT * FROM ports WHERE id = '".$id."' LIMIT 1"));
 
   if(empty($values["tcp"]) && empty($values["udp"])) return false;
 

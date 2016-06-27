@@ -7,7 +7,7 @@
 
 if($_SESSION["ad_level"] >= 1){
   if($_GET["cmd"] == "reset" && $_SESSION["ad_level"] >= 4){
-    mysql_query("DELETE FROM timeslots WHERE ip = '".mysql_real_escape_string($_GET["ip"])."'");
+    mysqli_query($db,"DELETE FROM timeslots WHERE ip = '".mysqli_real_escape_string($db,$_GET["ip"])."'");
     my_syslog("SelfService Timeslots resettet fuer ".$_GET["ip"]);
     echo "<div class='meldung_ok'>Kontingent f&uuml;r ".$_GET["ip"]." zur&uuml;ckgesetzt.</div><br>";
   }
@@ -26,8 +26,8 @@ if($_SESSION["ad_level"] >= 1){
   echo "  </tr>";
   echo "  </thead>";
   echo "  <tbody>";
-  $query = mysql_query("SELECT * FROM timeslots ORDER BY INET_ATON(ip)");
-  while($row = mysql_fetch_assoc($query)){
+  $query = mysqli_query($db,"SELECT * FROM timeslots ORDER BY INET_ATON(ip)");
+  while($row = mysqli_fetch_assoc($query)){
     $dns = gethostbyaddr($row["ip"]);
     echo "<tr>";
     echo "  <td>".$row["ip"]."</td>";

@@ -21,8 +21,8 @@ if($_SESSION["ad_level"] >= 1){
   }
 
   $port_status = array();
-  $query = mysql_query("SELECT * FROM ports");
-  while($row = mysql_fetch_assoc($query)){
+  $query = mysqli_query($db,"SELECT * FROM ports");
+  while($row = mysqli_fetch_assoc($query)){
     $tmp = ports_open($row["id"],true);
     $port_status[$tmp[2]][] = $row;
 

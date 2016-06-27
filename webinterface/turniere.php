@@ -24,11 +24,11 @@ if($_GET["cmd"] == "edit" && is_numeric($_GET["id"]) && !empty($_GET["id"])){
   $submit_name = "edit";
   $submit_value = "&Auml;ndern";
   $display = "block";
-  $value = mysql_fetch_assoc(mysql_query("SELECT * FROM turniere WHERE turnier_id = '".mysql_real_escape_string($_GET["id"])."' LIMIT 1"));
+  $value = mysqli_fetch_assoc(mysqli_query($db,"SELECT * FROM turniere WHERE turnier_id = '".mysqli_real_escape_string($db,$_GET["id"])."' LIMIT 1"));
   $value["leitungen"] = explode(",",$value["leitungen"]);
 }elseif($_GET["cmd"] == "del" && is_numeric($_GET["id"]) && !empty($_GET["id"])){
   // loeschen
-  mysql_query("DELETE FROM turniere WHERE turnier_id = '".mysql_real_escape_string($_GET["id"])."' LIMIT 1");
+  mysqli_query($db,"DELETE FROM turniere WHERE turnier_id = '".mysqli_real_escape_string($db,$_GET["id"])."' LIMIT 1");
 }
 
 // Formular wurde abgeschickt
@@ -43,16 +43,16 @@ if($_POST["add"] || $_POST["edit"]){
       $display = "block";
     }
   }else{
-    $turnier_id_old = mysql_real_escape_string($_POST["turnier_id_old"]);
-    $turnier_id = mysql_real_escape_string($_POST["turnier_id"]);
+    $turnier_id_old = mysqli_real_escape_string($db,$_POST["turnier_id_old"]);
+    $turnier_id = mysqli_real_escape_string($db,$_POST["turnier_id"]);
     $leitungen_new = array();
-    foreach($_POST["leitungen"] as $leitung) $leitungen_new[] = mysql_real_escape_string($leitung);
+    foreach($_POST["leitungen"] as $leitung) $leitungen_new[] = mysqli_real_escape_string($db,$leitung);
 
     if($_POST["add"]){
-      mysql_query("INSERT INTO turniere SET turnier_id = '".$turnier_id."', leitungen = '".implode(",",$leitungen_new)."'");
+      mysqli_query($db,"INSERT INTO turniere SET turnier_id = '".$turnier_id."', leitungen = '".implode(",",$leitungen_new)."'");
       echo "<div class='meldung_ok'>Turnier angelegt - bei diesem Turnier wurde der SelfService aktiviert.</div><br>";
     }elseif($_POST["edit"]){
-      mysql_query("UPDATE turniere SET turnier_id = '".$turnier_id."', leitungen = '".implode(",",$leitungen_new)."' WHERE turnier_id = '".$turnier_id_old."' LIMIT 1");
+      mysqli_query($db,"UPDATE turniere SET turnier_id = '".$turnier_id."', leitungen = '".implode(",",$leitungen_new)."' WHERE turnier_id = '".$turnier_id_old."' LIMIT 1");
       echo "<div class='meldung_ok'>Turnier ge&auml;ndert.</div><br>";
     }
   }
@@ -104,8 +104,8 @@ echo "<table class='hover_row'>
     <th width='70'>&nbsp;</th>
   </tr>";
 
-$query = mysql_query("SELECT * FROM turniere");
-while($row = mysql_fetch_assoc($query)){
+$query = mysqli_query($db,"SELECT * FROM turniere");
+while($row = mysqli_fetch_assoc($query)){
   echo "<tr>
     <td valign='top'>".$turniere[$row["turnier_id"]]."</td>
     <td>";

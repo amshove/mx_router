@@ -27,17 +27,17 @@ if($_SESSION["ad_level"] >= 1){
       echo "<div class='meldung_error'>IP muss angegeben werden!</div><br>";
     }elseif(!preg_match("/^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$/",$_POST["ip"]) && !preg_match("/^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\/[0-9]{1,2}$/",$_POST["ip"])){
       echo "<div class='meldung_error'>Keine g&uuml;ltige IP-Adresse angegeben.</div><br>";
-    }elseif(mysql_num_rows(mysql_query("SELECT id FROM history WHERE ip = '".$_POST["ip"]."' AND active = 1")) > 0){
+    }elseif(mysqli_num_rows(mysqli_query($db,"SELECT id FROM history WHERE ip = '".$_POST["ip"]."' AND active = 1")) > 0){
       echo "<div class='meldung_error'>Es gibt bereits eine Regel f&uuml;r die IP.</div><br>";
     }else{
       $now = time();
       if(empty($_POST["end_date"])) $end_date = 0;
       else $end_date = $now + ($_POST["end_date"]*60);
 
-      mysql_query("INSERT INTO history SET ip = '".mysql_real_escape_string($_POST["ip"])."', leitung = '".mysql_real_escape_string($_POST["leitung"])."', add_user = '".mysql_real_escape_string($_SESSION["user_name"])."', add_date = '".$now."', end_date = '".$end_date."', active = -1, reason = '".mysql_real_escape_string($_POST["reason"])."'");
-      $id = mysql_insert_id();
+      mysqli_query($db,"INSERT INTO history SET ip = '".mysqli_real_escape_string($db,$_POST["ip"])."', leitung = '".mysqli_real_escape_string($db,$_POST["leitung"])."', add_user = '".mysqli_real_escape_string($db,$_SESSION["user_name"])."', add_date = '".$now."', end_date = '".$end_date."', active = -1, reason = '".mysqli_real_escape_string($db,$_POST["reason"])."'");
+      $id = mysqli_insert_id($db);
 
-      my_syslog("Neue Regel erstellen");
+      my_syslog("Neue Regel erstellen - ID: $id");
       if(rule_add($id)){
         echo "<div class='meldung_ok'>Regel erfolgreich erstellt</div><br>";
       }else{
@@ -169,8 +169,8 @@ if($_SESSION["ad_level"] >= 1){
   echo "    <th width='100'>Traffic</th>";
   echo "    <th width='100'>Leitung</th>";
   echo "  </tr>";
-  $query = mysql_query("SELECT * FROM ports ORDER BY name");
-  while($row = mysql_fetch_assoc($query)){
+  $query = mysqli_query($db,"SELECT * FROM ports ORDER BY name");
+  while($row = mysqli_fetch_assoc($query)){
     $status = ports_open($row["id"]);
     $status_leitung = ports_open($row["id"],true);
     if($status[0] == true && $status[1] == true){
@@ -241,8 +241,8 @@ if($_SESSION["ad_level"] >= 1){
   echo "  <tbody>";
 
   $error = false;
-  $query = mysql_query("SELECT * FROM history WHERE active = 1 ORDER BY INET_ATON(ip)");
-  while($row = mysql_fetch_assoc($query)){ 
+  $query = mysqli_query($db,"SELECT * FROM history WHERE active = 1 ORDER BY INET_ATON(ip)");
+  while($row = mysqli_fetch_assoc($query)){ 
     $dns = @gethostbyaddr($row["ip"]);
     echo "<tr";
     if(!in_array($row["ip"],$iptables_ips)){ echo " style='background-color: #CC9999;'"; $error = true; }

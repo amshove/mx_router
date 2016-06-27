@@ -145,9 +145,9 @@ if($_SERVER["REMOTE_ADDR"] != "127.0.0.1" && (!isset($_SERVER['PHP_AUTH_USER']) 
   }else{
     // Gibt den Status zurueck (freite/benutzte Minuten, Reset-Zeit, Online-Status, ..)
     function getStatus($ip){
-      global $timeslots, $timeslot_period;
+      global $timeslots, $timeslot_period, $db;
 
-      $ip = mysql_real_escape_string($ip);
+      $ip = mysqli_real_escape_string($db,$ip);
       $status = array();
       $status["used"] = 0;
       $status["timeslots"] = $timeslots;
@@ -155,22 +155,22 @@ if($_SERVER["REMOTE_ADDR"] != "127.0.0.1" && (!isset($_SERVER['PHP_AUTH_USER']) 
       $status["period_reset"] = time()+($timeslot_period*60*60);
       $status["online"] = false;
 
-      $query = mysql_query("SELECT * FROM timeslots WHERE ip = '".$ip."' LIMIT 1");
-      if(mysql_num_rows($query) > 0){
-        $status["used"] = mysql_result($query,0,"used");
-        $status["period_reset"] = mysql_result($query,0,"period_start")+($timeslot_period*60*60);
+      $query = mysqli_query($db,"SELECT * FROM timeslots WHERE ip = '".$ip."' LIMIT 1");
+      if(mysqli_num_rows($query) > 0){
+        $status["used"] = own_mysqli_result($query,0,"used");
+        $status["period_reset"] = own_mysqli_result($query,0,"period_start")+($timeslot_period*60*60);
       }
       $status["free"] = $timeslots-$status["used"];
 
       $iptables_list = iptables_list();
       if(in_array($ip,$iptables_list[0])){
         $status["online"] = true;
-        $status["online_end"] = @mysql_result(mysql_query("SELECT end_date FROM history WHERE ip = '".$ip."' AND active = 1 LIMIT 1"),0,"end_date");
+        $status["online_end"] = @own_mysqli_result(mysqli_query($db,"SELECT end_date FROM history WHERE ip = '".$ip."' AND active = 1 LIMIT 1"),0,"end_date");
       }else{
         foreach($iptables_list[0] as $subnet){
           if($subnet != "0.0.0.0/0" && cidr_match($ip,$subnet)){
             $status["online"] = true;
-            $status["online_end"] = @mysql_result(mysql_query("SELECT end_date FROM history WHERE ip = '".mysql_real_escape_string($subnet)."' AND active = 1 LIMIT 1"),0,"end_date");
+            $status["online_end"] = @own_mysqli_result(mysqli_query($db,"SELECT end_date FROM history WHERE ip = '".mysqli_real_escape_string($db,$subnet)."' AND active = 1 LIMIT 1"),0,"end_date");
           }
         }
       }
@@ -187,10 +187,11 @@ if($_SERVER["REMOTE_ADDR"] != "127.0.0.1" && (!isset($_SERVER['PHP_AUTH_USER']) 
 
     // Gibt den Status der globalen Freigaben an
     function getGlobal($ip){
+      global $db;
       $global_status = array();
       $i = 0;
-      $query = mysql_query("SELECT id,name FROM ports WHERE active = 1");
-      while($row = mysql_fetch_assoc($query)){
+      $query = mysqli_query($db,"SELECT id,name FROM ports WHERE active = 1");
+      while($row = mysqli_fetch_assoc($query)){
         $global_status[$i]["name"] = $row["name"];
 
         $status = ports_open($row["id"]);
@@ -207,18 +208,18 @@ if($_SERVER["REMOTE_ADDR"] != "127.0.0.1" && (!isset($_SERVER['PHP_AUTH_USER']) 
     // Schaltet das Internet fuer eine bestimmte Zeit in Minuten frei
     // Wenn $admin = true, werden die Timeslots nicht berechnet
     function setInternet($ip,$reason,$time,$admin){
-      global $timeslots, $timeslot_period;
+      global $timeslots, $timeslot_period, $db;
 
-      $ip = mysql_real_escape_string($ip);
-      $reason = mysql_real_escape_string(urldecode($reason));
+      $ip = mysqli_real_escape_string($db,$ip);
+      $reason = mysqli_real_escape_string($db,urldecode($reason));
       $used = 0;
       $period_start = time();
       $return = array();
 
-      $query = mysql_query("SELECT * FROM timeslots WHERE ip = '".$ip."' LIMIT 1");
-      if(mysql_num_rows($query) > 0){
-        $used = mysql_result($query,0,"used");
-        $period_start = mysql_result($query,0,"period_start");
+      $query = mysqli_query($db,"SELECT * FROM timeslots WHERE ip = '".$ip."' LIMIT 1");
+      if(mysqli_num_rows($query) > 0){
+        $used = own_mysqli_result($query,0,"used");
+        $period_start = own_mysqli_result($query,0,"period_start");
       }
 
       my_syslog("Freischaltung fuer $ip fuer $time: $reason");
@@ -239,11 +240,11 @@ if($_SERVER["REMOTE_ADDR"] != "127.0.0.1" && (!isset($_SERVER['PHP_AUTH_USER']) 
       }else{
         $now = time();
         $end_date = $now + ($time*60);
-        mysql_query("INSERT INTO history SET ip = '".$ip."', add_user = 'SelfService', add_date = '".$now."', end_date = '".$end_date."', active = -1, reason = '$reason'");
-        $id = mysql_insert_id();
+        mysqli_query($db,"INSERT INTO history SET ip = '".$ip."', add_user = 'SelfService', add_date = '".$now."', end_date = '".$end_date."', active = -1, reason = '$reason'");
+        $id = mysqli_insert_id($db);
         if($id > 0 && rule_add($id)){
           $used = $used+$time;
-          if(!$admin) mysql_query("INSERT INTO timeslots SET ip = '".$ip."', used = '".$used."', period_start = '".$period_start."' ON DUPLICATE KEY UPDATE used = '".$used."'");
+          if(!$admin) mysqli_query($db,"INSERT INTO timeslots SET ip = '".$ip."', used = '".$used."', period_start = '".$period_start."' ON DUPLICATE KEY UPDATE used = '".$used."'");
           $return[0] = true;
           $return[1] = "Das Internet ist jetzt f&uuml;r $time Minuten freigeschaltet.";
           my_syslog($return[1]);

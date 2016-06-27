@@ -17,12 +17,12 @@ if($_GET["cmd"] == "edit" && is_numeric($_GET["id"]) && !empty($_GET["id"])){
   $submit_name = "edit";
   $submit_value = "&Auml;ndern";
   $display = "block";
-  $value = mysql_fetch_assoc(mysql_query("SELECT * FROM ports WHERE id = '".mysql_real_escape_string($_GET["id"])."' LIMIT 1"));
+  $value = mysqli_fetch_assoc(mysqli_query($db,"SELECT * FROM ports WHERE id = '".mysqli_real_escape_string($db,$_GET["id"])."' LIMIT 1"));
 }elseif($_GET["cmd"] == "del" && is_numeric($_GET["id"]) && !empty($_GET["id"])){
   // loeschen
-  my_syslog("Globale Ports loeschen: ".var_export(mysql_fetch_assoc(mysql_query("SELECT * FROM ports WHERE id = '".mysql_real_escape_string($_GET["id"])."' LIMIT 1")),true));
-  if(mysql_result(mysql_query("SELECT active FROM ports WHERE id = '".mysql_real_escape_string($_GET["id"])."' LIMIT 1"),0,"active") == "1") ports_del($_GET["id"]);
-  mysql_query("DELETE FROM ports WHERE id = '".mysql_real_escape_string($_GET["id"])."' LIMIT 1");
+  my_syslog("Globale Ports loeschen: ".var_export(mysqli_fetch_assoc(mysqli_query($db,"SELECT * FROM ports WHERE id = '".mysqli_real_escape_string($db,$_GET["id"])."' LIMIT 1")),true));
+  if(own_mysqli_result(mysqli_query($db,"SELECT active FROM ports WHERE id = '".mysqli_real_escape_string($db,$_GET["id"])."' LIMIT 1"),0,"active") == "1") ports_del($_GET["id"]);
+  mysqli_query($db,"DELETE FROM ports WHERE id = '".mysqli_real_escape_string($db,$_GET["id"])."' LIMIT 1");
 }
 
 // Formular wurde abgeschickt
@@ -37,10 +37,10 @@ if($_POST["add"] || $_POST["edit"]){
       $display = "block";
     }
   }else{
-    $id = mysql_real_escape_string($_POST["id"]);
-    $name = mysql_real_escape_string($_POST["name"]);
-    $tcp = mysql_real_escape_string($_POST["tcp"]);
-    $udp = mysql_real_escape_string($_POST["udp"]);
+    $id = mysqli_real_escape_string($db,$_POST["id"]);
+    $name = mysqli_real_escape_string($db,$_POST["name"]);
+    $tcp = mysqli_real_escape_string($db,$_POST["tcp"]);
+    $udp = mysqli_real_escape_string($db,$_POST["udp"]);
 
     $tcp = str_replace("-",":",$tcp);
     $udp = str_replace("-",":",$udp);
@@ -59,18 +59,18 @@ if($_POST["add"] || $_POST["edit"]){
       }
     }else{
       if($_POST["add"]){
-        mysql_query("INSERT INTO ports SET name = '".$name."', tcp = '".$tcp."', udp = '".$udp."'");
+        mysqli_query($db,"INSERT INTO ports SET name = '".$name."', tcp = '".$tcp."', udp = '".$udp."'");
         echo "<div class='meldung_ok'>Globale Freischaltung angelegt - aktivieren kann man diese auf der Startseite</div><br>";
       }elseif($_POST["edit"]){
-        if(mysql_result(mysql_query("SELECT active FROM ports WHERE id = '".$id."' LIMIT 1"),0,"active") == "1") $active = true;
+        if(own_mysqli_result(mysqli_query($db,"SELECT active FROM ports WHERE id = '".$id."' LIMIT 1"),0,"active") == "1") $active = true;
         else $active = false;
 
         my_syslog("Globale Ports aendern");
-        my_syslog("Alt: ".var_export(mysql_fetch_assoc(mysql_query("SELECT * FROM ports WHERE id = '".mysql_real_escape_string($id)."' LIMIT 1")),true));
+        my_syslog("Alt: ".var_export(mysqli_fetch_assoc(mysqli_query($db,"SELECT * FROM ports WHERE id = '".mysqli_real_escape_string($db,$id)."' LIMIT 1")),true));
 
         if($active) ports_del($id);
-        mysql_query("UPDATE ports SET name = '".$name."', tcp = '".$tcp."', udp = '".$udp."' WHERE id = '".$id."' LIMIT 1");
-        my_syslog("Neu: ".var_export(mysql_fetch_assoc(mysql_query("SELECT * FROM ports WHERE id = '".mysql_real_escape_string($id)."' LIMIT 1")),true));
+        mysqli_query($db,"UPDATE ports SET name = '".$name."', tcp = '".$tcp."', udp = '".$udp."' WHERE id = '".$id."' LIMIT 1");
+        my_syslog("Neu: ".var_export(mysqli_fetch_assoc(mysqli_query($db,"SELECT * FROM ports WHERE id = '".mysqli_real_escape_string($db,$id)."' LIMIT 1")),true));
         if($active) ports_add($id);
         echo "<div class='meldung_ok'>Globale Freischaltung ge&auml;ndert.</div><br>";
       }
@@ -116,8 +116,8 @@ echo "<table class='hover_row'>
     <th width='70'>&nbsp;</th>
   </tr>";
 
-$query = mysql_query("SELECT * FROM ports ORDER BY name");
-while($row = mysql_fetch_assoc($query)){
+$query = mysqli_query($db,"SELECT * FROM ports ORDER BY name");
+while($row = mysqli_fetch_assoc($query)){
   echo "<tr>
     <td>".$row["name"]."</td>
     <td>".$row["tcp"]."</td>

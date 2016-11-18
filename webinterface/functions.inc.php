@@ -13,8 +13,8 @@ $ad_level = array(
 );
 
 // Mit MySQL verbinden
-$db = mysqli_connect($mysql_host,$mysql_user,$mysql_pw) or die(mysql_error($db));
-mysqli_select_db($db,$mysql_db) or die(mysql_error($db));
+$db = mysqli_connect($mysql_host,$mysql_user,$mysql_pw) or die(mysqli_connect_error());
+mysqli_select_db($db,$mysql_db) or die(mysqli_error($db));
 
 // Workaround fuer depricated mysql_result
 function own_mysqli_result($result, $row, $field){

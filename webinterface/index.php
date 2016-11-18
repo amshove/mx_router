@@ -61,7 +61,7 @@ if($_POST["submit_login"]){
             $users = $soap_client->getUserIps();
             $_SESSION["users"] = $users;
           }
-        }catch(Exception $e){ }
+        }catch(Exception $e){ echo $e; }
       }
     }
   }

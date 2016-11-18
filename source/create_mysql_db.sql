@@ -7,7 +7,7 @@
 CREATE TABLE IF NOT EXISTS `arp_table` (
   `ip` varchar(15) NOT NULL,
   `mac` varchar(17) NOT NULL,
-  `interface` varchar(6) NOT NULL,
+  `interface` varchar(20) NOT NULL,
   `last_seen` datetime NOT NULL,
   PRIMARY KEY (`ip`,`mac`,`interface`)
 );

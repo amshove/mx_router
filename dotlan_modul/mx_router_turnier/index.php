@@ -30,7 +30,7 @@ $subnetz = array(
 $PAGE->sitetitle = $PAGE->htmltitle = _("Contest Internetfreischaltung"); // Tietel der als THML-Überschrift der Seite angezeigt wird
 
 // genutzte Variablen
-$event_id   = $EVENT->next;      // ID des anstehenden Event's
+$event_id   = $EVENT->next_event_id;      // ID des anstehenden Event's
 $user_id    = $CURRENT_USER->id;
 $date       = date("Y.m.d");
 $time       = date("H:i:s");

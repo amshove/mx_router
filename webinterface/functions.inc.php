@@ -30,14 +30,21 @@ else $logged_in = false;
 
 // Status der Leitungen testen
 function ping($ip, $eth = ""){
+  global $debug, $code_log;
   if(!empty($eth)) $eth = "-I ".escapeshellarg($eth);
-  exec("ping -n -q -c 1 -W 1 ".escapeshellarg($ip)." ".$eth." > /dev/null 2>&1",$retarr,$retrc);
+  $cmd = "ping -n -q -c 1 -W 1 ".escapeshellarg($ip)." ".$eth." > /dev/null 2>&1";
+  if($debug) $start = time();
+  exec($cmd,$retarr,$retrc);
+  if($debug){
+    $time = time()-$start;
+    $code_log .= "\n".time()." (".$time."s) CMD: ".$cmd;
+  }
   return $retrc;
 }
 
 // FW-Freischaltung anlegen
 function rule_add($id,$restore = false){
-  global $iptables_cmd, $db;
+  global $iptables_cmd, $db, $debug, $code_log;
   $id = mysqli_real_escape_string($db,$id);
   $values = mysqli_fetch_assoc(mysqli_query($db,"SELECT * FROM history WHERE id = '".$id."' LIMIT 1"));
 
@@ -47,7 +54,12 @@ function rule_add($id,$restore = false){
 
   if($values["ip"]){
     $cmd = $iptables_cmd." -A FORWARD --source ".escapeshellarg($values["ip"])." -j ACCEPT";
+    if($debug) $start = time();
     exec($cmd,$retarr,$retrc);
+    if($debug){
+      $time = time()-$start;
+      $code_log .= "\n".time()." (".$time."s) CMD: ".$cmd;
+    }
     my_syslog("rule_add($id,$restore): $cmd | RC: $retrc");
     if($retrc != 0){
       if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
@@ -65,7 +77,7 @@ function rule_add($id,$restore = false){
 
 // FW-Freischaltung entfernen
 function rule_del($id,$del_user){
-  global $iptables_cmd, $db;
+  global $iptables_cmd, $db, $debug, $code_log;
   $id = mysqli_real_escape_string($db,$id);
   $del_user = mysqli_real_escape_string($db,$del_user);
   $values = mysqli_fetch_assoc(mysqli_query($db,"SELECT * FROM history WHERE id = '".$id."' LIMIT 1"));
@@ -77,7 +89,12 @@ function rule_del($id,$del_user){
     $iptables_traffic = $tmp[1];
 
     $cmd = $iptables_cmd." -D FORWARD --source ".escapeshellarg($values["ip"])." -j ACCEPT";
+    if($debug) $start = time();
     exec($cmd,$retarr,$retrc);
+    if($debug){
+      $time = time()-$start;
+      $code_log .= "\n".time()." (".$time."s) CMD: ".$cmd;
+    }
     my_syslog("rule_del($id,$del_user): $cmd | RC: $retrc");
     if($retrc != 0){
       if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
@@ -94,7 +111,7 @@ function rule_del($id,$del_user){
 
 // Leitungszuordnung fuer IP aendern
 function leitung_chg($id,$leitung_neu){
-  global $iptables_cmd, $max_fw_mark, $db;
+  global $iptables_cmd, $max_fw_mark, $db, $debug, $code_log;
   if($leitung_neu > $max_fw_mark) $leitung_neu = 0;
 
   $id = mysqli_real_escape_string($db,$id);
@@ -105,7 +122,12 @@ function leitung_chg($id,$leitung_neu){
   // Alten Eintrag loeschen
   if($values["leitung"] > 0){
     $cmd = $iptables_cmd." -t mangle -D PREROUTING --source ".escapeshellarg($values["ip"])." -j MARK --set-mark ".escapeshellarg($values["leitung"]);
+    if($debug) $start = time();
     exec($cmd,$retarr,$retrc);
+    if($debug){
+      $time = time()-$start;
+      $code_log .= "\n".time()." (".$time."s) CMD: ".$cmd;
+    }
     my_syslog("leitung_chg($id,$leitung_neu): $cmd | RC: $retrc");
   }
 
@@ -114,7 +136,12 @@ function leitung_chg($id,$leitung_neu){
   // Neuer Eintrag wenn noetig
   if($leitung_neu > 0){
     $cmd = $iptables_cmd." -t mangle -I PREROUTING 2 --source ".escapeshellarg($values["ip"])." -j MARK --set-mark ".escapeshellarg($leitung_neu);
+    if($debug) $start = time();
     exec($cmd,$retarr,$retrc);
+    if($debug){
+      $time = time()-$start;
+      $code_log .= "\n".time()." (".$time."s) CMD: ".$cmd;
+    }
     my_syslog("leitung_chg($id,$leitung_neu): $cmd | RC: $retrc");
     if($retrc != 0){
       if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
@@ -126,7 +153,7 @@ function leitung_chg($id,$leitung_neu){
 
 // Ports global freigeben
 function ports_add($id){
-  global $iptables_cmd, $db;
+  global $iptables_cmd, $db, $debug, $code_log;
   $id = mysqli_real_escape_string($db,$id);
   $values = mysqli_fetch_assoc(mysqli_query($db,"SELECT * FROM ports WHERE id = '".$id."' LIMIT 1"));
 
@@ -136,7 +163,12 @@ function ports_add($id){
 
   if(!empty($values["tcp"])){
     $cmd = $iptables_cmd." -A FORWARD -m multiport -p tcp --dports ".escapeshellarg($values["tcp"])." -j ACCEPT -m comment --comment \"Global-Ports: ".escapeshellarg($values["name"])."\"";
+    if($debug) $start = time();
     exec($cmd,$retarr,$retrc);
+    if($debug){
+      $time = time()-$start;
+      $code_log .= "\n".time()." (".$time."s) CMD: ".$cmd;
+    }
     my_syslog("ports_add($id): $cmd | RC: $retrc");
     if($retrc != 0){
       if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
@@ -146,7 +178,12 @@ function ports_add($id){
 
   if(!empty($values["udp"])){
     $cmd = $iptables_cmd." -A FORWARD -m multiport -p udp --dports ".escapeshellarg($values["udp"])." -j ACCEPT -m comment --comment \"Global-Ports: ".escapeshellarg($values["name"])."\"";
+    if($debug) $start = time();
     exec($cmd,$retarr,$retrc);
+    if($debug){
+      $time = time()-$start;
+      $code_log .= "\n".time()." (".$time."s) CMD: ".$cmd;
+    }
     my_syslog("ports_add($id): $cmd | RC: $retrc");
     if($retrc != 0){
       if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
@@ -160,7 +197,7 @@ function ports_add($id){
 
 // Globale Freigabe entfernen
 function ports_del($id){
-  global $iptables_cmd, $db;
+  global $iptables_cmd, $db, $debug, $code_log;
   $id = mysqli_real_escape_string($db,$id);
   $values = mysqli_fetch_assoc(mysqli_query($db,"SELECT * FROM ports WHERE id = '".$id."' LIMIT 1"));
 
@@ -170,7 +207,12 @@ function ports_del($id){
 
   if(!empty($values["tcp"])){
     $cmd = $iptables_cmd." -D FORWARD -m multiport -p tcp --dports ".escapeshellarg($values["tcp"])." -j ACCEPT -m comment --comment \"Global-Ports: ".escapeshellarg($values["name"])."\"";
+    if($debug) $start = time();
     exec($cmd,$retarr,$retrc);
+    if($debug){
+      $time = time()-$start;
+      $code_log .= "\n".time()." (".$time."s) CMD: ".$cmd;
+    }
     my_syslog("ports_del($id): $cmd | RC: $retrc");
     if($retrc != 0){
       if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
@@ -180,7 +222,12 @@ function ports_del($id){
 
   if(!empty($values["udp"])){
     $cmd = $iptables_cmd." -D FORWARD -m multiport -p udp --dports ".escapeshellarg($values["udp"])." -j ACCEPT -m comment --comment \"Global-Ports: ".escapeshellarg($values["name"])."\"";
+    if($debug) $start = time();
     exec($cmd,$retarr,$retrc);
+    if($debug){
+      $time = time()-$start;
+      $code_log .= "\n".time()." (".$time."s) CMD: ".$cmd;
+    }
     my_syslog("ports_del($id): $cmd | RC: $retrc");
     if($retrc != 0){
       if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
@@ -194,7 +241,7 @@ function ports_del($id){
 
 // Leitungszuordnung fuer Ports aendern
 function ports_leitung_chg($id,$leitung_neu){
-  global $iptables_cmd, $max_fw_mark, $db;
+  global $iptables_cmd, $max_fw_mark, $db, $debug, $code_log;
   if($leitung_neu > $max_fw_mark) $leitung_neu = 0;
 
   $id = mysqli_real_escape_string($db,$id);
@@ -206,12 +253,22 @@ function ports_leitung_chg($id,$leitung_neu){
   if($values["leitung"] > 0){
     if(!empty($values["tcp"])){
       $cmd = $iptables_cmd." -t mangle -D PREROUTING -m multiport -p tcp --dports ".escapeshellarg($values["tcp"])." -j MARK --set-mark ".escapeshellarg($values["leitung"])." -m comment --comment \"Global-Ports: ".escapeshellarg($values["name"])."\"";
+      if($debug) $start = time();
       exec($cmd,$retarr,$retrc);
+      if($debug){
+        $time = time()-$start;
+        $code_log .= "\n".time()." (".$time."s) CMD: ".$cmd;
+      }
       my_syslog("ports_leitung_chg($id): $cmd | RC: $retrc");
     }
     if(!empty($values["udp"])){
       $cmd = $iptables_cmd." -t mangle -D PREROUTING -m multiport -p udp --dports ".escapeshellarg($values["tcp"])." -j MARK --set-mark ".escapeshellarg($values["leitung"])." -m comment --comment \"Global-Ports: ".escapeshellarg($values["name"])."\"";
+      if($debug) $start = time();
       exec($cmd,$retarr,$retrc);
+      if($debug){
+        $time = time()-$start;
+        $code_log .= "\n".time()." (".$time."s) CMD: ".$cmd;
+      }
       my_syslog("ports_leitung_chg($id): $cmd | RC: $retrc");
     }
   }
@@ -222,7 +279,12 @@ function ports_leitung_chg($id,$leitung_neu){
   if($leitung_neu > 0){
     if(!empty($values["tcp"])){
       $cmd = $iptables_cmd." -t mangle -A PREROUTING -m multiport -p tcp --dports ".escapeshellarg($values["tcp"])." -j MARK --set-mark ".escapeshellarg($leitung_neu)." -m comment --comment \"Global-Ports: ".escapeshellarg($values["name"])."\"";
+      if($debug) $start = time();
       exec($cmd,$retarr,$retrc);
+      if($debug){
+        $time = time()-$start;
+        $code_log .= "\n".time()." (".$time."s) CMD: ".$cmd;
+      }
       my_syslog("ports_leitung_chg($id): $cmd | RC: $retrc");
       if($retrc != 0){
         if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
@@ -231,7 +293,12 @@ function ports_leitung_chg($id,$leitung_neu){
     }
     if(!empty($values["udp"])){
       $cmd = $iptables_cmd." -t mangle -A PREROUTING -m multiport -p udp --dports ".escapeshellarg($values["tcp"])." -j MARK --set-mark ".escapeshellarg($leitung_neu)." -m comment --comment \"Global-Ports: ".escapeshellarg($values["name"])."\"";
+      if($debug) $start = time();
       exec($cmd,$retarr,$retrc);
+      if($debug){
+        $time = time()-$start;
+        $code_log .= "\n".time()." (".$time."s) CMD: ".$cmd;
+      }
       my_syslog("ports_leitung_chg($id): $cmd | RC: $retrc");
       if($retrc != 0){
         if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
@@ -244,10 +311,15 @@ function ports_leitung_chg($id,$leitung_neu){
 
 // Status, Traffic und Leitungszuordnung aller Freigaben abfragen
 function iptables_list($leitung=false){
-  global $iptables_cmd;
+  global $iptables_cmd, $debug, $code_log;
   if(!$leitung) $cmd = $iptables_cmd." -vn -L FORWARD | grep ACCEPT";
   else $cmd = $iptables_cmd." -t mangle -n -L PREROUTING | grep MARK";
+  if($debug) $start = time();
   exec($cmd,$retarr,$retrc);
+  if($debug){
+    $time = time()-$start;
+    $code_log .= "\n".time()." (".$time."s) CMD: ".$cmd;
+  }
   if(!$leitung && $retrc != 0){
     if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
     return false;
@@ -281,7 +353,7 @@ function iptables_list($leitung=false){
 
 // Testen, ob globale Freischaltung aktiv ist und auf welcher Leitung sie lauft
 function ports_open($id,$leitung=false){
-  global $iptables_cmd, $db;
+  global $iptables_cmd, $db, $debug, $code_log;
   $id = mysqli_real_escape_string($db,$id);
   $values = mysqli_fetch_assoc(mysqli_query($db,"SELECT * FROM ports WHERE id = '".$id."' LIMIT 1"));
 
@@ -289,7 +361,12 @@ function ports_open($id,$leitung=false){
 
   if(!$leitung) $cmd = $iptables_cmd." -n -L FORWARD | grep ACCEPT";
   else $cmd = $iptables_cmd." -t mangle -n -L PREROUTING | grep MARK";
+  if($debug) $start = time();
   exec($cmd,$retarr,$retrc);
+  if($debug){
+    $time = time()-$start;
+    $code_log .= "\n".time()." (".$time."s) CMD: ".$cmd;
+  }
   if(!$leitung && $retrc != 0){
     if($_SESSION["ad_level"] >= 5) echo "<div class='meldung_error'>$cmd nicht erfolgreich - RC: $retrc</div><br>";
     return false;

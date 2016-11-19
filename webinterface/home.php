@@ -243,13 +243,29 @@ if($_SESSION["ad_level"] >= 1){
   $error = false;
   $query = mysqli_query($db,"SELECT * FROM history WHERE active = 1 ORDER BY INET_ATON(ip)");
   while($row = mysqli_fetch_assoc($query)){ 
-    $dns = @gethostbyaddr($row["ip"]);
+#    $dns = @gethostbyaddr($row["ip"]);
+    $retrc = 1;
+    $dns = "";
+    if(!strstr($row["ip"],"/")){
+      $cmd = "host -W 1 ".$row["ip"];
+      unset($retarr);
+      if($debug) $start = time();
+      exec($cmd,$retarr,$retrc);
+      if($debug){
+        $time = time()-$start;
+        $code_log .= "\n".time()." (".$time."s) CMD: ".$cmd;
+      }
+      if($retrc == 0){
+        $tmp = explode(" ",$retarr[0]);
+        $dns = $tmp[4];
+      }
+    }
     echo "<tr";
     if(!in_array($row["ip"],$iptables_ips)){ echo " style='background-color: #CC9999;'"; $error = true; }
     echo ">";
     echo "  <td valign='top'><input type='checkbox' name='id[]' value='".$row["id"]."' style='margin: 0px;'></td>";
     echo "  <td valign='top'>".$row["ip"]."</td>";
-    echo "  <td valign='top' align='center'>".($dns == $row["ip"] ? "" : $dns)."</td>";
+    echo "  <td valign='top' align='center'>".($retrc != 0 ? "" : $dns)."</td>";
     echo "  <td valign='top' align='center'>".$iptables_traffic[$row["ip"]]."</td>";
     echo "  <td valign='top'>".nl2br($row["reason"])."</td>";
     echo "  <td valign='top'>".$row["add_user"]."</td>";

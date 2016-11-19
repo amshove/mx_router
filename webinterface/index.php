@@ -4,6 +4,11 @@
 # Copyright (C) Torsten Amshove <torsten@amshove.net> #
 # See: http://www.amshove.net                         #
 #######################################################
+$debug = true;
+if($debug){
+  $start_time = time();
+  $code_log = "Started: ".$start_time;
+}
 $log_ident = substr(md5(mt_rand()),0,5);
 openlog("mx_router[web_$log_ident]",LOG_ODELAY,LOG_USER); // Logging zu Syslog oeffnen
 require("config.inc.php");
@@ -139,6 +144,15 @@ if(!$logged_in){
     case "user": include("user.php"); break;
     default: include("home.php"); break;
   }
+}
+
+if($debug){
+  $end_time = time();
+  $time_needed = $end_time-$start_time;
+  echo "\n<!--\n Site created in ".$time_needed." seconds\n";
+  echo $code_log;
+  echo "\nEnded: ".$end_time;
+  echo "\n-->";
 }
 ?>
 

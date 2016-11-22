@@ -4,7 +4,7 @@ Packet Flow: http://xkr47.outerspace.dyndns.org/netfilter/packet_flow/
 
 Installation
 ------------
-- Ubuntu 12.04 installieren
+- Ubuntu 16.04 installieren
 - In der Datei /etc/network/interfaces das Interface fuer das lokale Netzwerk einstellen - alle anderen Interfaces muessen unkonfiguriert bleiben  
 WICHTIG: Es darf kein Interface auf dhcp eingestellt sein!  
 ``auto eth0``  
